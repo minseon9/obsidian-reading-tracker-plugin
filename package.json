@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-reading-tracker-plugin",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "Reading Tracker for Obsidian - Import books, track progress, and analyze reading habits",
 	"main": "main.js",
 	"type": "module",

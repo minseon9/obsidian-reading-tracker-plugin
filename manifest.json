@@ -1,7 +1,7 @@
 {
 	"id": "reading-tracker",
 	"name": "Reading Tracker",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"minAppVersion": "1.10.1",
 	"description": "One note per sitting with a book: how far you got, how long, and the passages you copied out.",
 	"author": "minseon9",
