@@ -21,7 +21,7 @@ export class NoteAccess {
 	 */
 	static frontmatter(app: App, file: TFile): Frontmatter | null {
 		const cached = app.metadataCache.getFileCache(file)?.frontmatter;
-		return cached ? (cached as Frontmatter) : null;
+		return cached ?? null;
 	}
 
 	/** A note's body, with the properties block removed. */
@@ -37,7 +37,7 @@ export class NoteAccess {
 		mutate: (frontmatter: Frontmatter) => void
 	): Promise<void> {
 		await app.fileManager.processFrontMatter(file, (frontmatter: Record<string, unknown>) => {
-			mutate(frontmatter as Frontmatter);
+			mutate(frontmatter);
 		});
 	}
 

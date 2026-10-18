@@ -27,11 +27,8 @@ export class ChartRenderer {
 		doc: Document,
 		dailyActivity: Record<string, number>
 	): void {
-		const wrapper = doc.createElement('div');
-		wrapper.className = 'reading-tracker-heatmap-wrapper';
-
-		const grid = doc.createElement('div');
-		grid.className = 'reading-tracker-heatmap-grid';
+		const wrapper = container.createDiv({ cls: 'reading-tracker-heatmap-wrapper' });
+		const grid = wrapper.createDiv({ cls: 'reading-tracker-heatmap-grid' });
 
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
@@ -47,34 +44,24 @@ export class ChartRenderer {
 			const count = dailyActivity[key] ?? 0;
 			const level = count === 0 ? 0 : count === 1 ? 1 : count === 2 ? 2 : 3;
 
-			const cell = doc.createElement('div');
-			cell.className = `reading-tracker-heatmap-cell is-level-${level}`;
+			const cell = grid.createDiv({
+				cls: `reading-tracker-heatmap-cell is-level-${level}`,
+			});
 			cell.title = count > 0
 				? `${key} — read ${count} ${count === 1 ? 'book' : 'books'}`
 				: `${key} — no reading recorded`;
-			grid.appendChild(cell);
 		}
 
-		wrapper.appendChild(grid);
-
-		const legend = doc.createElement('div');
-		legend.className = 'reading-tracker-heatmap-legend';
-		const less = doc.createElement('span');
-		less.textContent = 'Less';
-		legend.appendChild(less);
+		const legend = wrapper.createDiv({ cls: 'reading-tracker-heatmap-legend' });
+		legend.createSpan({ text: 'Less' });
 
 		for (let level = 0; level <= 3; level++) {
-			const sample = doc.createElement('span');
-			sample.className = `reading-tracker-heatmap-cell is-level-${level}`;
-			legend.appendChild(sample);
+			legend.createSpan({
+				cls: `reading-tracker-heatmap-cell is-level-${level}`,
+			});
 		}
 
-		const more = doc.createElement('span');
-		more.textContent = 'More';
-		legend.appendChild(more);
-		wrapper.appendChild(legend);
-
-		container.appendChild(wrapper);
+		legend.createSpan({ text: 'More' });
 	}
 
 	/**
@@ -93,59 +80,22 @@ export class ChartRenderer {
 		const maxValue = Math.max(...data.map(d => d.value));
 
 		data.forEach(item => {
-			const barContainer = doc.createElement('div');
-			barContainer.setCssProps({
-				"margin-bottom": "12px"
+			const barContainer = container.createDiv({ cls: 'reading-tracker-bar-row' });
+
+			const labelRow = barContainer.createDiv({ cls: 'reading-tracker-bar-label-row' });
+			labelRow.createSpan({
+				cls: 'reading-tracker-bar-label',
+				text: item.label,
+			});
+			labelRow.createSpan({
+				cls: 'reading-tracker-bar-value',
+				text: item.value.toString(),
 			});
 
-			const labelRow = doc.createElement('div');
-			labelRow.setCssProps({
-				display: "flex",
-				"justify-content": "space-between",
-				"align-items": "center",
-				"margin-bottom": "4px"
-			});
-
-			const label = doc.createElement('span');
-			label.textContent = item.label;
-			label.setCssProps({
-				"font-size": "12px",
-				color: "var(--text-normal)"
-			});
-
-			const value = doc.createElement('span');
-			value.textContent = item.value.toString();
-			value.setCssProps({
-				"font-size": "12px",
-				"font-weight": "600",
-				color: "var(--text-accent)"
-			});
-
-			labelRow.appendChild(label);
-			labelRow.appendChild(value);
-
-			const barBg = doc.createElement('div');
-			barBg.setCssProps({
-				width: "100%",
-				height: "8px",
-				"background-color": "var(--background-modifier-border)",
-				"border-radius": "4px",
-				overflow: "hidden"
-			});
-
-			const barFill = doc.createElement('div');
+			const barBg = barContainer.createDiv({ cls: 'reading-tracker-bar-bg' });
+			const barFill = barBg.createDiv({ cls: 'reading-tracker-bar-fill' });
 			const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
-			barFill.setCssProps({
-				width: `${percentage}%`,
-				height: "100%",
-				"background-color": "var(--interactive-accent)",
-				transition: "width 0.3s"
-			});
-
-			barBg.appendChild(barFill);
-			barContainer.appendChild(labelRow);
-			barContainer.appendChild(barBg);
-			container.appendChild(barContainer);
+			barFill.setCssProps({ width: `${percentage}%` });
 		});
 	}
 
@@ -169,11 +119,11 @@ export class ChartRenderer {
 		const plotHeight = CHART_HEIGHT - PADDING * 2;
 
 		const svg = doc.createElementNS(SVG_NS, 'svg');
+		svg.setAttribute('class', 'reading-tracker-line-chart-svg');
 		svg.setAttribute('width', '100%');
 		svg.setAttribute('height', `${CHART_HEIGHT}px`);
 		svg.setAttribute('viewBox', `0 0 ${VIEW_WIDTH} ${CHART_HEIGHT}`);
 		svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-		(svg as unknown as HTMLElement).setCssProps({ display: "block" });
 
 		ChartRenderer.renderGridAndYAxis(svg, doc, maxValue, plotWidth, plotHeight);
 
@@ -275,27 +225,14 @@ export class ChartRenderer {
 	 */
 	static renderEmptyChart(
 		container: HTMLElement,
-		doc: Document,
+		_doc: Document,
 		xAxisLabel: string
 	): void {
-		const emptyState = doc.createElement('div');
-		emptyState.setCssProps({
-			display: "flex",
-			"flex-direction": "column",
-			"align-items": "center",
-			"justify-content": "center",
-			height: "200px",
-			color: "var(--text-muted)"
-		});
-
-		const text = doc.createElement('div');
+		const emptyState = container.createDiv({ cls: 'reading-tracker-empty-chart' });
 		const axisLabel = xAxisLabel.toLowerCase();
-		text.textContent = axisLabel ? `No ${axisLabel} data yet` : 'No data yet';
-		text.setCssProps({
-			"font-size": "13px"
+		emptyState.createDiv({
+			cls: 'reading-tracker-empty-chart-text',
+			text: axisLabel ? `No ${axisLabel} data yet` : 'No data yet',
 		});
-
-		emptyState.appendChild(text);
-		container.appendChild(emptyState);
 	}
 }

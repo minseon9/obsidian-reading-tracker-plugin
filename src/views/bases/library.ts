@@ -54,213 +54,131 @@ export class LibraryBasesView extends BasesViewBase {
 	private renderContent(): void {
 		if (!this.rootElement) return;
 
-		const doc = this.rootElement.ownerDocument;
-
 		const sections: Array<{ title: string; books: Array<{ book: Book; file: TFile }>; type: ShelfSection }> = [
 			{ title: 'Unread books', books: this.unreadBooks, type: 'unread' },
 			{ title: 'Finished books', books: this.finishedBooks, type: 'finished' },
 			{ title: 'Abandoned books', books: this.abandonedBooks, type: 'abandoned' },
 		];
 
-		const header = doc.createElement('div');
-		header.className = 'reading-tracker-header';
-		header.setCssProps({
-			padding: "12px",
-			"border-bottom": "1px solid var(--background-modifier-border)"
+		const header = this.rootElement.createDiv({
+			cls: 'reading-tracker-header',
 		});
 
 		const summary = sections
 			.map(({ title: name, books }) => `${books.length} ${name.split(' ')[0]?.toLowerCase() ?? ''}`)
 			.join(', ');
-		const title = doc.createElement('h2');
-		title.textContent = `Library (${summary})`;
-		title.setCssProps({
-			margin: "0",
-			"font-size": "1.2em"
+		header.createEl('h2', {
+			cls: 'reading-tracker-library-header-title',
+			text: `Library (${summary})`,
 		});
-		header.appendChild(title);
 
-		this.rootElement.appendChild(header);
-
-		const contentContainer = doc.createElement('div');
-		contentContainer.setCssProps({
-			flex: "1",
-			"overflow-y": "auto",
-			padding: "12px"
+		const contentContainer = this.rootElement.createDiv({
+			cls: 'reading-tracker-shelf-content',
 		});
 
 		for (const section of sections) {
-			this.renderSection(contentContainer, doc, section.title, section.books, section.type);
+			this.renderSection(contentContainer, section.title, section.books, section.type);
 		}
-
-		this.rootElement.appendChild(contentContainer);
 	}
 
 	private renderSection(
 		container: HTMLElement,
-		doc: Document,
 		title: string,
 		books: Array<{ book: Book; file: TFile }>,
 		type: ShelfSection
 	): void {
-		const sectionHeader = doc.createElement('div');
-		sectionHeader.setCssProps({
-			"margin-top": "24px",
-			"margin-bottom": "12px",
-			"padding-bottom": "8px",
-			"border-bottom": "2px solid var(--background-modifier-border)"
+		const sectionHeader = container.createDiv({
+			cls: 'reading-tracker-library-section-header',
 		});
 
-		const titleEl = doc.createElement('h3');
-		titleEl.textContent = `${title} (${books.length})`;
-		titleEl.setCssProps({
-			margin: "0",
-			"font-size": "1.2em",
-			"font-weight": "600"
+		sectionHeader.createEl('h3', {
+			cls: 'reading-tracker-library-section-title',
+			text: `${title} (${books.length})`,
 		});
-		sectionHeader.appendChild(titleEl);
-		container.appendChild(sectionHeader);
 
 		if (books.length === 0) {
 			this.renderEmptyState(container);
 			return;
 		}
 
-		const list = doc.createElement('ul');
-		list.setCssProps({
-			"list-style": "none",
-			padding: "0",
-			margin: "0"
+		const list = container.createEl('ul', {
+			cls: 'reading-tracker-unread-ul',
 		});
 
 		for (const { book, file } of books) {
-			list.appendChild(this.renderBookListItem(doc, book, file, type));
+			this.renderBookListItem(list, book, file, type);
 		}
-
-		container.appendChild(list);
 	}
 
 	private renderBookListItem(
-		doc: Document,
+		list: HTMLUListElement,
 		book: Book,
 		file: TFile,
 		type: ShelfSection
-	): HTMLLIElement {
-		const listItem = doc.createElement('li');
-		listItem.setCssProps({
-			padding: "12px",
-			"border-bottom": "1px solid var(--background-modifier-border)",
-			cursor: "pointer"
+	): void {
+		const listItem = list.createEl('li', {
+			cls: 'reading-tracker-library-item',
 		});
 		listItem.addEventListener('click', (e) => {
 			if (e.defaultPrevented) return;
 			void this.appInstance.workspace.openLinkText(file.path, '', true);
 		});
 
-		const titleEl = doc.createElement('div');
-		titleEl.textContent = formatBookTitleWithSeries(book);
-		titleEl.setCssProps({
-			"font-weight": "600",
-			"font-size": "14px",
-			"margin-bottom": "4px"
+		listItem.createDiv({
+			cls: 'reading-tracker-library-item-title',
+			text: formatBookTitleWithSeries(book),
 		});
-		listItem.appendChild(titleEl);
 
 		if (book.author && book.author.length > 0) {
-			const authorEl = doc.createElement('div');
-			authorEl.textContent = book.author.join(', ');
-			authorEl.setCssProps({
-				"font-size": "12px",
-				color: "var(--text-muted)",
-				"margin-bottom": "4px"
+			listItem.createDiv({
+				cls: 'reading-tracker-library-item-author',
+				text: book.author.join(', '),
 			});
-			listItem.appendChild(authorEl);
 		}
 
-		listItem.appendChild(this.renderBookMeta(doc, book, file, type));
-		return listItem;
+		this.renderBookMeta(listItem, book, file, type);
 	}
 
 	private renderBookMeta(
-		doc: Document,
+		parent: HTMLElement,
 		book: Book,
 		file: TFile,
 		type: ShelfSection
-	): HTMLElement {
-		const metaEl = doc.createElement('div');
-		metaEl.setCssProps({
-			"font-size": "11px",
-			color: "var(--text-faint)",
-			display: "flex",
-			gap: "12px"
+	): void {
+		const metaEl = parent.createDiv({
+			cls: 'reading-tracker-library-item-meta',
 		});
 
 		const unit = toReadingUnit(book.readingUnit);
 		const finishedDate = dayOf(book.readFinished) ?? book.readFinished;
 
 		if (type === 'finished' && finishedDate) {
-			const finishedEl = doc.createElement('span');
-			finishedEl.textContent = `Finished: ${finishedDate}`;
-			metaEl.appendChild(finishedEl);
+			metaEl.createSpan({ text: `Finished: ${finishedDate}` });
 		} else if (type !== 'finished') {
-			const createdEl = doc.createElement('span');
-			createdEl.textContent = `Added: ${formatDate(new Date(file.stat.ctime))}`;
-			metaEl.appendChild(createdEl);
+			metaEl.createSpan({ text: `Added: ${formatDate(new Date(file.stat.ctime))}` });
 		}
 
 		if (type === 'abandoned' && book.readPage) {
-			const stoppedEl = doc.createElement('span');
-			stoppedEl.textContent = `Stopped at ${formatPosition(book.readPage, unit)}`;
-			metaEl.appendChild(stoppedEl);
+			metaEl.createSpan({ text: `Stopped at ${formatPosition(book.readPage, unit)}` });
 		}
 
 		if (book.rating !== undefined && book.rating > 0) {
-			const ratingEl = doc.createElement('span');
-			ratingEl.textContent = '★'.repeat(book.rating);
-			metaEl.appendChild(ratingEl);
+			metaEl.createSpan({ text: '★'.repeat(book.rating) });
 		}
 
 		if (book.totalPages) {
-			const pagesEl = doc.createElement('span');
-			pagesEl.textContent = formatAmount(book.totalPages, unit);
-			metaEl.appendChild(pagesEl);
+			metaEl.createSpan({ text: formatAmount(book.totalPages, unit) });
 		}
-
-		return metaEl;
 	}
 
 	private renderEmptyState(container: HTMLElement): void {
-		const doc = container.ownerDocument;
-		const emptyState = doc.createElement('div');
-		emptyState.className = 'reading-tracker-empty-state';
-		emptyState.setCssProps({
-			display: "flex",
-			"flex-direction": "column",
-			"align-items": "center",
-			"justify-content": "center",
-			padding: "40px 20px",
-			"text-align": "center"
+		const emptyState = container.createDiv({
+			cls: 'reading-tracker-library-empty-state',
 		});
-
-		const icon = doc.createElement('div');
-		icon.className = 'reading-tracker-empty-icon';
-		icon.textContent = '📚';
-		icon.setCssProps({
-			"font-size": "3em",
-			"margin-bottom": "12px"
+		emptyState.createDiv({
+			cls: 'reading-tracker-library-empty-text',
+			text: 'No books in this section.',
 		});
-		emptyState.appendChild(icon);
-
-		const title = doc.createElement('div');
-		title.textContent = 'No books';
-		title.setCssProps({
-			margin: "0",
-			"font-size": "1.1em",
-			color: "var(--text-muted)"
-		});
-		emptyState.appendChild(title);
-
-		container.appendChild(emptyState);
 	}
 }
 

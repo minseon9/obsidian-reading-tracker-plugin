@@ -59,6 +59,16 @@
 	cursor: pointer;
 }
 
+.reading-tracker-message-success {
+	padding: 12px;
+	margin-top: 16px;
+	background-color: transparent;
+	color: var(--interactive-accent);
+	font-size: 14px;
+	text-align: center;
+	font-weight: 500;
+}
+
 .reading-tracker-search-results {
 	margin-top: 14px;
 	max-height: 62vh;

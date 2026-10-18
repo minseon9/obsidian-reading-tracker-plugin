@@ -32,13 +32,14 @@ export class BookCard {
 	}
 
 	render(): HTMLElement {
-		const card = document.createElement('div');
-		card.className = 'reading-tracker-book-card reading-tracker-book-reading';
+		const card = createDiv({
+			cls: 'reading-tracker-book-card reading-tracker-book-reading',
+		});
 
-		const bodyRow = card.createEl('div', { cls: 'reading-tracker-card-body' });
+		const bodyRow = card.createDiv({ cls: 'reading-tracker-card-body' });
 		this.renderCover(bodyRow);
 
-		const infoContainer = bodyRow.createEl('div', {
+		const infoContainer = bodyRow.createDiv({
 			cls: 'reading-tracker-book-info',
 		});
 
@@ -53,7 +54,7 @@ export class BookCard {
 	}
 
 	private renderCover(parent: HTMLElement): void {
-		const coverContainer = parent.createEl('div', {
+		const coverContainer = parent.createDiv({
 			cls: 'reading-tracker-book-cover',
 		});
 
@@ -74,35 +75,35 @@ export class BookCard {
 	}
 
 	private renderCoverPlaceholder(container: HTMLElement): void {
-		const placeholder = container.createEl('div', {
+		const placeholder = container.createDiv({
 			cls: 'reading-tracker-cover-placeholder',
 		});
-		const iconEl = placeholder.createEl('span', {
+		const iconEl = placeholder.createSpan({
 			cls: 'reading-tracker-cover-placeholder-icon',
 		});
 		setIcon(iconEl, 'book-open');
 	}
 
 	private renderHeader(infoContainer: HTMLElement): void {
-		const titleRow = infoContainer.createEl('div', {
+		const titleRow = infoContainer.createDiv({
 			cls: 'reading-tracker-book-title-row',
 		});
 
-		titleRow.createEl('div', {
+		titleRow.createDiv({
 			cls: 'reading-tracker-book-title',
 			text: this.book.title,
 		});
 
 		const seriesLabel = formatSeriesLabel(this.book);
 		if (seriesLabel) {
-			titleRow.createEl('span', {
+			titleRow.createSpan({
 				cls: 'reading-tracker-series-pill',
 				text: seriesLabel,
 			});
 		}
 
 		if (this.book.author && this.book.author.length > 0) {
-			infoContainer.createEl('div', {
+			infoContainer.createDiv({
 				cls: 'reading-tracker-book-author',
 				text: this.book.author.join(', '),
 			});
@@ -115,7 +116,7 @@ export class BookCard {
 		const current = this.book.readPage ?? 0;
 		const progress = calculateProgressPercent(current, total, unit);
 
-		const progressContainer = infoContainer.createEl('div', {
+		const progressContainer = infoContainer.createDiv({
 			cls: 'reading-tracker-progress-container',
 		});
 
@@ -123,7 +124,7 @@ export class BookCard {
 			const fallbackText = current > 0
 				? `Position: ${formatAmount(current, unit)} · Set total in properties for %`
 				: 'Set total in note properties to track progress';
-			progressContainer.createEl('div', {
+			progressContainer.createDiv({
 				cls: 'reading-tracker-no-total-hint',
 				text: fallbackText,
 			});
@@ -131,49 +132,48 @@ export class BookCard {
 		}
 
 		const remaining = Math.max(0, total - current);
-		const progressHeader = progressContainer.createEl('div', {
+		const progressHeader = progressContainer.createDiv({
 			cls: 'reading-tracker-progress-header',
 		});
 
-		progressHeader.createEl('span', {
+		progressHeader.createSpan({
 			cls: 'reading-tracker-progress-position',
 			text: `${formatPosition(current, unit)} / ${formatAmount(total, unit)}`,
 		});
 
-		progressHeader.createEl('span', {
+		progressHeader.createSpan({
 			cls: 'reading-tracker-progress-percent',
 			text: `${Math.round(progress)}%`,
 		});
 
-		const progressBar = progressContainer.createEl('div', {
+		const progressBar = progressContainer.createDiv({
 			cls: 'reading-tracker-progress-bar',
 		});
 
-		const progressFill = progressBar.createEl('div', {
+		const progressFill = progressBar.createDiv({
 			cls: 'reading-tracker-progress-fill',
 		});
 		progressFill.setCssProps({ width: `${progress}%` });
 
-		const progressSub = progressContainer.createEl('div', {
+		progressContainer.createDiv({
 			cls: 'reading-tracker-progress-sub',
 			text: remaining > 0 ? `${formatAmount(remaining, unit)} left` : 'Completed',
 		});
-		void progressSub;
 	}
 
 	private renderReadingMeta(infoContainer: HTMLElement): void {
-		const metaRow = infoContainer.createEl('div', {
+		const metaRow = infoContainer.createDiv({
 			cls: 'reading-tracker-card-meta',
 		});
 
 		const startedDate = dayOf(this.book.readStarted);
 		if (this.book.lastReadDate) {
-			metaRow.createEl('span', {
+			metaRow.createSpan({
 				cls: 'reading-tracker-meta-item is-accent',
 				text: `Last read ${this.book.lastReadDate}`,
 			});
 		} else if (startedDate) {
-			metaRow.createEl('span', {
+			metaRow.createSpan({
 				cls: 'reading-tracker-meta-item',
 				text: `Started ${startedDate}`,
 			});
@@ -181,7 +181,7 @@ export class BookCard {
 
 		const sessions = this.book.sessionCount ?? 0;
 		if (sessions > 0) {
-			metaRow.createEl('span', {
+			metaRow.createSpan({
 				cls: 'reading-tracker-meta-item',
 				text: `${sessions} ${sessions === 1 ? 'sitting' : 'sittings'}`,
 			});
@@ -189,7 +189,7 @@ export class BookCard {
 
 		const minutes = this.book.minutesRead ?? 0;
 		if (minutes > 0) {
-			metaRow.createEl('span', {
+			metaRow.createSpan({
 				cls: 'reading-tracker-meta-item',
 				text: formatDurationMinutes(minutes),
 			});
@@ -197,7 +197,7 @@ export class BookCard {
 
 		const quotes = this.book.quoteCount ?? 0;
 		if (quotes > 0) {
-			metaRow.createEl('span', {
+			metaRow.createSpan({
 				cls: 'reading-tracker-meta-item',
 				text: `${quotes} ${quotes === 1 ? 'passage' : 'passages'}`,
 			});
@@ -211,7 +211,7 @@ export class BookCard {
 
 		const plugin = this.plugin;
 		const file = this.file;
-		const buttonContainer = infoContainer.createEl('div', {
+		const buttonContainer = infoContainer.createDiv({
 			cls: 'reading-tracker-card-actions',
 		});
 

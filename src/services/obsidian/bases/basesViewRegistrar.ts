@@ -65,7 +65,7 @@ export async function registerBasesViews(plugin: ReadingTrackerPlugin): Promise<
 
 	// If that fails, try a few more times with short delays
 	for (let i = 0; i < 5; i++) {
-		await new Promise((r) => setTimeout(r, 200));
+		await new Promise((r) => window.setTimeout(r, 200));
 		if (attemptRegistration()) {
 			return;
 		}

@@ -32,7 +32,7 @@ export class SearchModal extends Modal {
 	private openLibraryClient: OpenLibraryClient;
 	private bookFileCreator: BookFileCreator;
 	private bookFileReader: BookFileReader;
-	private searchTimeout: ReturnType<typeof setTimeout> | null = null;
+	private searchTimeout: number | null = null;
 	private currentResults: BookSearchResult[] = [];
 	private currentOffset = 0;
 	private hasMoreResults = false;
@@ -65,12 +65,12 @@ export class SearchModal extends Modal {
 				});
 			});
 
-		this.loadingIndicator = contentEl.createEl('div', {
+		this.loadingIndicator = contentEl.createDiv({
 			cls: 'reading-tracker-loading is-hidden',
 			text: 'Searching catalogue...',
 		});
 
-		this.resultsContainer = contentEl.createEl('div', {
+		this.resultsContainer = contentEl.createDiv({
 			cls: 'reading-tracker-search-results',
 		});
 
@@ -86,8 +86,8 @@ export class SearchModal extends Modal {
 		this.contentEl.empty();
 		this.activeSearchSequence++;
 
-		if (this.searchTimeout) {
-			clearTimeout(this.searchTimeout);
+		if (this.searchTimeout !== null) {
+			window.clearTimeout(this.searchTimeout);
 			this.searchTimeout = null;
 		}
 	}
@@ -95,8 +95,8 @@ export class SearchModal extends Modal {
 	private handleSearchInput() {
 		const query = this.searchInput.value.trim();
 
-		if (this.searchTimeout) {
-			clearTimeout(this.searchTimeout);
+		if (this.searchTimeout !== null) {
+			window.clearTimeout(this.searchTimeout);
 			this.searchTimeout = null;
 		}
 
@@ -114,7 +114,7 @@ export class SearchModal extends Modal {
 		this.showLoading();
 		const sequence = this.activeSearchSequence;
 
-		this.searchTimeout = setTimeout(() => {
+		this.searchTimeout = window.setTimeout(() => {
 			void this.performSearch(query, 0, sequence);
 		}, SEARCH_DEBOUNCE_MS);
 	}
@@ -192,7 +192,7 @@ export class SearchModal extends Modal {
 		}
 
 		if (this.currentResults.length === 0) {
-			this.resultsContainer.createEl('div', {
+			this.resultsContainer.createDiv({
 				cls: 'reading-tracker-no-results',
 				text: 'No matching books found in the catalogue.',
 			});
@@ -210,12 +210,12 @@ export class SearchModal extends Modal {
 	}
 
 	private renderResultItem(book: BookSearchResult): void {
-		const resultItem = this.resultsContainer.createEl('div', {
+		const resultItem = this.resultsContainer.createDiv({
 			cls: 'reading-tracker-result-item',
 		});
 
 		if (book.coverUrl) {
-			const coverContainer = resultItem.createEl('div', {
+			const coverContainer = resultItem.createDiv({
 				cls: 'reading-tracker-result-cover',
 			});
 			const coverImg = coverContainer.createEl('img', {
@@ -229,17 +229,17 @@ export class SearchModal extends Modal {
 			});
 		}
 
-		const infoContainer = resultItem.createEl('div', {
+		const infoContainer = resultItem.createDiv({
 			cls: 'reading-tracker-result-info',
 		});
 
-		infoContainer.createEl('div', {
+		infoContainer.createDiv({
 			cls: 'reading-tracker-result-title',
 			text: book.title,
 		});
 
 		if (book.author && book.author.length > 0) {
-			infoContainer.createEl('div', {
+			infoContainer.createDiv({
 				cls: 'reading-tracker-result-author',
 				text: `by ${book.author.join(', ')}`,
 			});
@@ -251,13 +251,13 @@ export class SearchModal extends Modal {
 		if (book.totalPages) metaParts.push(`${book.totalPages} pages`);
 
 		if (metaParts.length > 0) {
-			infoContainer.createEl('div', {
+			infoContainer.createDiv({
 				cls: 'reading-tracker-result-meta',
 				text: metaParts.join(' · '),
 			});
 		}
 
-		const actions = infoContainer.createEl('div', {
+		const actions = infoContainer.createDiv({
 			cls: 'reading-tracker-result-actions',
 		});
 
@@ -279,7 +279,7 @@ export class SearchModal extends Modal {
 
 	private renderLoadingMoreIndicator(): void {
 		this.removeLoadingMoreIndicator();
-		this.resultsContainer.createEl('div', {
+		this.resultsContainer.createDiv({
 			cls: 'reading-tracker-loading-more',
 			text: 'Loading more...',
 		});
@@ -295,20 +295,20 @@ export class SearchModal extends Modal {
 	private renderManualAdd(container: HTMLElement, defaultTitle: string): void {
 		container.querySelector('.reading-tracker-manual-add')?.remove();
 
-		const section = container.createEl('div', { cls: 'reading-tracker-manual-add' });
-		section.createEl('div', {
+		const section = container.createDiv({ cls: 'reading-tracker-manual-add' });
+		section.createDiv({
 			cls: 'reading-tracker-manual-add-title',
 			text: 'Add a book by hand',
 		});
-		section.createEl('div', {
+		section.createDiv({
 			cls: 'reading-tracker-manual-add-hint',
 			text: 'Not in the catalogue? Fill in what you know now; you can always edit properties on the note later.',
 		});
 
-		const grid = section.createEl('div', { cls: 'reading-tracker-manual-form-grid' });
+		const grid = section.createDiv({ cls: 'reading-tracker-manual-form-grid' });
 
 		const titleField = grid.createEl('label', { cls: 'reading-tracker-metric-field' });
-		titleField.createEl('span', { cls: 'reading-tracker-metric-label', text: 'Title' });
+		titleField.createSpan({ cls: 'reading-tracker-metric-label', text: 'Title' });
 		const titleInput = titleField.createEl('input', {
 			type: 'text',
 			placeholder: 'Book title',
@@ -316,14 +316,14 @@ export class SearchModal extends Modal {
 		});
 
 		const authorField = grid.createEl('label', { cls: 'reading-tracker-metric-field' });
-		authorField.createEl('span', { cls: 'reading-tracker-metric-label', text: 'Author (optional)' });
+		authorField.createSpan({ cls: 'reading-tracker-metric-label', text: 'Author (optional)' });
 		const authorInput = authorField.createEl('input', {
 			type: 'text',
 			placeholder: 'Han Kang',
 		});
 
 		const totalField = grid.createEl('label', { cls: 'reading-tracker-metric-field' });
-		const totalLabel = totalField.createEl('span', {
+		const totalLabel = totalField.createSpan({
 			cls: 'reading-tracker-metric-label',
 			text: 'Total pages (optional)',
 		});
@@ -333,7 +333,7 @@ export class SearchModal extends Modal {
 		});
 
 		const unitField = grid.createEl('label', { cls: 'reading-tracker-metric-field' });
-		unitField.createEl('span', { cls: 'reading-tracker-metric-label', text: 'Unit' });
+		unitField.createSpan({ cls: 'reading-tracker-metric-label', text: 'Unit' });
 		const unitSelect = unitField.createEl('select', { cls: 'dropdown' });
 		for (const unit of READING_UNITS) {
 			unitSelect.createEl('option', { value: unit, text: readingUnitLabel(unit) });
@@ -352,7 +352,7 @@ export class SearchModal extends Modal {
 			}
 		});
 
-		const actions = section.createEl('div', { cls: 'reading-tracker-result-actions' });
+		const actions = section.createDiv({ cls: 'reading-tracker-result-actions' });
 
 		const submitManual = async (status: BookStatus) => {
 			const title = titleInput.value.trim();

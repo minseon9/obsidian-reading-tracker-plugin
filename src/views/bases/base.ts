@@ -60,8 +60,8 @@ export abstract class BasesViewBase extends Component {
 		this.setupContainer();
 
 		// Wait a bit for Bases to populate data
-		requestAnimationFrame(() => {
-			setTimeout(() => {
+		window.requestAnimationFrame(() => {
+			window.setTimeout(() => {
 				if (this.rootElement?.isConnected) {
 					void this.render();
 				}
@@ -80,7 +80,7 @@ export abstract class BasesViewBase extends Component {
 		}
 
 		if (this.dataUpdateDebounceTimer) {
-			clearTimeout(this.dataUpdateDebounceTimer);
+			window.clearTimeout(this.dataUpdateDebounceTimer);
 		}
 
 		const win = this.containerEl.ownerDocument.defaultView || window;
@@ -100,7 +100,7 @@ export abstract class BasesViewBase extends Component {
 	 */
 	onunload(): void {
 		if (this.dataUpdateDebounceTimer) {
-			clearTimeout(this.dataUpdateDebounceTimer);
+			window.clearTimeout(this.dataUpdateDebounceTimer);
 		}
 		super.onunload();
 	}
@@ -109,19 +109,11 @@ export abstract class BasesViewBase extends Component {
 	 * Setup the container element
 	 */
 	protected setupContainer(): void {
-		const doc = this.containerEl.ownerDocument;
-
 		// Don't clear containerEl - Bases manages it
-		const rootEl = doc.createElement("div");
-		rootEl.className = "reading-tracker-bases-view";
-		rootEl.setCssProps({
-			display: "flex",
-			"flex-direction": "column",
-			height: "100%",
-			width: "100%"
+		const rootEl = this.containerEl.createDiv({
+			cls: "reading-tracker-bases-view",
 		});
 		rootEl.tabIndex = -1;
-		this.containerEl.appendChild(rootEl);
 		this.rootElement = rootEl;
 
 		this.setupNewBookButton();
@@ -144,11 +136,11 @@ export abstract class BasesViewBase extends Component {
 			const buttonExists = toolbarEl?.querySelector(".reading-tracker-bases-new-book-btn");
 
 			if (!buttonExists && attempts < maxAttempts) {
-				setTimeout(tryInject, 200);
+				window.setTimeout(tryInject, 200);
 			}
 		};
 
-		setTimeout(tryInject, 100);
+		window.setTimeout(tryInject, 100);
 		this.register(() => this.cleanupNewBookButton());
 	}
 
@@ -172,13 +164,12 @@ export abstract class BasesViewBase extends Component {
 
 		parentEl.classList.add("reading-tracker-view-active");
 
-		const toolbarEl = parentEl.querySelector(".bases-toolbar");
+		const toolbarEl = parentEl.querySelector<HTMLElement>(".bases-toolbar");
 		if (!toolbarEl || toolbarEl.querySelector(".reading-tracker-bases-new-book-btn")) {
 			return;
 		}
 
-		const doc = this.containerEl.ownerDocument;
-		const newBookBtn = this.createNewBookToolbarButton(doc);
+		const newBookBtn = this.createNewBookToolbarButton();
 
 		const originalNewBtn = toolbarEl.querySelector(".bases-toolbar-new-item-menu");
 		if (originalNewBtn) {
@@ -188,25 +179,25 @@ export abstract class BasesViewBase extends Component {
 		}
 	}
 
-	private createNewBookToolbarButton(doc: Document): HTMLElement {
-		const newBookBtn = doc.createElement("div");
-		newBookBtn.className = "bases-toolbar-item reading-tracker-bases-new-book-btn";
+	private createNewBookToolbarButton(): HTMLElement {
+		const newBookBtn = createDiv({
+			cls: "bases-toolbar-item reading-tracker-bases-new-book-btn",
+		});
 
-		const innerBtn = doc.createElement("div");
-		innerBtn.className = "text-icon-button";
+		const innerBtn = newBookBtn.createDiv({
+			cls: "text-icon-button",
+		});
 		innerBtn.tabIndex = 0;
 
-		const iconSpan = doc.createElement("span");
-		iconSpan.className = "text-button-icon";
+		const iconSpan = innerBtn.createSpan({
+			cls: "text-button-icon",
+		});
 		setIcon(iconSpan, "book-plus");
-		innerBtn.appendChild(iconSpan);
 
-		const labelSpan = doc.createElement("span");
-		labelSpan.className = "text-button-label";
-		labelSpan.textContent = "New book";
-		innerBtn.appendChild(labelSpan);
-
-		newBookBtn.appendChild(innerBtn);
+		innerBtn.createSpan({
+			cls: "text-button-label",
+			text: "New book",
+		});
 
 		const openSearch = (e: Event) => {
 			e.stopPropagation();
@@ -216,12 +207,12 @@ export abstract class BasesViewBase extends Component {
 		};
 
 		innerBtn.addEventListener("click", openSearch, { capture: true });
-		innerBtn.addEventListener("mousedown", (e) => {
+		innerBtn.addEventListener("mousedown", (e: MouseEvent) => {
 			if (e.button === 0) {
 				openSearch(e);
 			}
 		}, { capture: true });
-		innerBtn.addEventListener("keydown", (e) => {
+		innerBtn.addEventListener("keydown", (e: KeyboardEvent) => {
 			if (e.key === "Enter" || e.key === " ") {
 				openSearch(e);
 			}
@@ -311,18 +302,11 @@ export abstract class BasesViewBase extends Component {
 	protected renderError(error: Error): void {
 		if (!this.rootElement) return;
 
-		const doc = this.rootElement.ownerDocument;
 		this.rootElement.empty();
-
-		const errorEl = doc.createElement("div");
-		errorEl.className = "reading-tracker-error";
-		errorEl.setCssProps({
-			padding: "20px",
-			"text-align": "center",
-			color: "var(--text-error)"
+		this.rootElement.createDiv({
+			cls: "reading-tracker-error reading-tracker-view-error",
+			text: `Error: ${error.message}`,
 		});
-		errorEl.textContent = `Error: ${error.message}`;
-		this.rootElement.appendChild(errorEl);
 	}
 
 	/**

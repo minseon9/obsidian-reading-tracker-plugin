@@ -129,7 +129,7 @@ export class RecordSessionModal extends Modal {
 
 	private renderMissingBook(): void {
 		this.contentEl.empty();
-		this.contentEl.createEl('div', {
+		this.contentEl.createDiv({
 			cls: 'reading-tracker-error',
 			text: 'No books found in your vault yet. Search and add a book first.',
 		});
@@ -177,10 +177,10 @@ export class RecordSessionModal extends Modal {
 				});
 		}
 
-		const bookInfo = container.createEl('div', { cls: 'reading-tracker-progress-book-info' });
-		bookInfo.createEl('div', { cls: 'reading-tracker-progress-title', text: book.title });
+		const bookInfo = container.createDiv({ cls: 'reading-tracker-progress-book-info' });
+		bookInfo.createDiv({ cls: 'reading-tracker-progress-title', text: book.title });
 		if (book.author && book.author.length > 0) {
-			bookInfo.createEl('div', {
+			bookInfo.createDiv({
 				cls: 'reading-tracker-progress-author',
 				text: `by ${book.author.join(', ')}`,
 			});
@@ -192,10 +192,10 @@ export class RecordSessionModal extends Modal {
 		const initialValue = formatPosition(initialPosition, this.unit);
 		const placeholder = positionPlaceholder(this.unit);
 
-		const grid = container.createEl('div', { cls: 'reading-tracker-session-metrics-grid' });
+		const grid = container.createDiv({ cls: 'reading-tracker-session-metrics-grid' });
 
 		const dateField = grid.createEl('label', { cls: 'reading-tracker-metric-field' });
-		dateField.createEl('span', { cls: 'reading-tracker-metric-label', text: 'Date' });
+		dateField.createSpan({ cls: 'reading-tracker-metric-label', text: 'Date' });
 		this.dateInput = dateField.createEl('input', {
 			cls: 'reading-tracker-metric-input',
 			type: 'date',
@@ -203,7 +203,7 @@ export class RecordSessionModal extends Modal {
 		this.dateInput.value = formatDate();
 
 		const fromField = grid.createEl('label', { cls: 'reading-tracker-metric-field' });
-		fromField.createEl('span', {
+		fromField.createSpan({
 			cls: 'reading-tracker-metric-label',
 			text: `From (${unitName})`,
 		});
@@ -216,7 +216,7 @@ export class RecordSessionModal extends Modal {
 		this.fromInput.addEventListener('input', () => this.updateCalculations());
 
 		const toField = grid.createEl('label', { cls: 'reading-tracker-metric-field' });
-		toField.createEl('span', {
+		toField.createSpan({
 			cls: 'reading-tracker-metric-label',
 			text: `To (${unitName})`,
 		});
@@ -229,7 +229,7 @@ export class RecordSessionModal extends Modal {
 		this.toInput.addEventListener('input', () => this.updateCalculations());
 
 		const minutesField = grid.createEl('label', { cls: 'reading-tracker-metric-field' });
-		minutesField.createEl('span', {
+		minutesField.createSpan({
 			cls: 'reading-tracker-metric-label',
 			text: 'Minutes (optional)',
 		});
@@ -242,20 +242,20 @@ export class RecordSessionModal extends Modal {
 	}
 
 	private renderProgressSummary(container: HTMLElement, book: Book): void {
-		const summaryBar = container.createEl('div', { cls: 'reading-tracker-progress-summary-bar' });
+		const summaryBar = container.createDiv({ cls: 'reading-tracker-progress-summary-bar' });
 
-		const amountGroup = summaryBar.createEl('div', { cls: 'reading-tracker-progress-calc' });
-		amountGroup.createEl('span', { cls: 'reading-tracker-progress-label', text: 'This sitting:' });
-		this.amountDisplay = amountGroup.createEl('span', {
+		const amountGroup = summaryBar.createDiv({ cls: 'reading-tracker-progress-calc' });
+		amountGroup.createSpan({ cls: 'reading-tracker-progress-label', text: 'This sitting:' });
+		this.amountDisplay = amountGroup.createSpan({
 			cls: 'reading-tracker-progress-value',
 			text: '-',
 		});
 
 		const total = effectiveTotal(book.totalPages, this.unit);
 		if (total !== undefined) {
-			const progressGroup = summaryBar.createEl('div', { cls: 'reading-tracker-progress-calc' });
-			progressGroup.createEl('span', { cls: 'reading-tracker-progress-label', text: 'Progress:' });
-			this.progressDisplay = progressGroup.createEl('span', {
+			const progressGroup = summaryBar.createDiv({ cls: 'reading-tracker-progress-calc' });
+			progressGroup.createSpan({ cls: 'reading-tracker-progress-label', text: 'Progress:' });
+			this.progressDisplay = progressGroup.createSpan({
 				cls: 'reading-tracker-progress-value',
 				text: '0%',
 			});
@@ -273,16 +273,16 @@ export class RecordSessionModal extends Modal {
 				button.onClick(() => this.addQuoteRow(true));
 			});
 
-		this.quotesContainer = container.createEl('div', { cls: 'reading-tracker-quotes' });
+		this.quotesContainer = container.createDiv({ cls: 'reading-tracker-quotes' });
 		this.quoteRows = [];
 		this.addQuoteRow(false);
 	}
 
 	private renderThoughtsSection(container: HTMLElement): void {
-		const thoughtsSection = container.createEl('div', { cls: 'reading-tracker-thoughts-section' });
-		const header = thoughtsSection.createEl('div', { cls: 'reading-tracker-thoughts-header' });
-		header.createEl('div', { cls: 'setting-item-name', text: 'Thoughts' });
-		header.createEl('div', {
+		const thoughtsSection = container.createDiv({ cls: 'reading-tracker-thoughts-section' });
+		const header = thoughtsSection.createDiv({ cls: 'reading-tracker-thoughts-header' });
+		header.createDiv({ cls: 'setting-item-name', text: 'Thoughts' });
+		header.createDiv({
 			cls: 'setting-item-description',
 			text: 'What you made of it. The session note opens after saving so you can keep writing.',
 		});
@@ -294,10 +294,10 @@ export class RecordSessionModal extends Modal {
 	}
 
 	private renderOutcomeAndRatingRow(container: HTMLElement): void {
-		const footerGrid = container.createEl('div', { cls: 'reading-tracker-session-footer-grid' });
+		const footerGrid = container.createDiv({ cls: 'reading-tracker-session-footer-grid' });
 
 		const outcomeField = footerGrid.createEl('label', { cls: 'reading-tracker-metric-field' });
-		outcomeField.createEl('span', {
+		outcomeField.createSpan({
 			cls: 'reading-tracker-metric-label',
 			text: 'Book status after sitting',
 		});
@@ -313,7 +313,7 @@ export class RecordSessionModal extends Modal {
 		this.outcomeSelect = outcomeSelect;
 
 		const ratingField = footerGrid.createEl('label', { cls: 'reading-tracker-metric-field' });
-		ratingField.createEl('span', {
+		ratingField.createSpan({
 			cls: 'reading-tracker-metric-label',
 			text: 'Rating',
 		});
@@ -330,7 +330,7 @@ export class RecordSessionModal extends Modal {
 	}
 
 	private renderSubmitButton(container: HTMLElement): void {
-		const buttonContainer = container.createEl('div', { cls: 'reading-tracker-progress-buttons' });
+		const buttonContainer = container.createDiv({ cls: 'reading-tracker-progress-buttons' });
 		const saveButton = buttonContainer.createEl('button', { cls: 'mod-cta', text: 'Record sitting' });
 		saveButton.addEventListener('click', () => void this.submit());
 	}
@@ -343,8 +343,8 @@ export class RecordSessionModal extends Modal {
 		const container = this.quotesContainer;
 		if (!container) return;
 
-		const root = container.createEl('div', { cls: 'reading-tracker-quote-row' });
-		const header = root.createEl('div', { cls: 'reading-tracker-quote-header' });
+		const root = container.createDiv({ cls: 'reading-tracker-quote-row' });
+		const header = root.createDiv({ cls: 'reading-tracker-quote-header' });
 
 		const page = header.createEl('input', { cls: 'reading-tracker-citation-input' });
 		page.type = 'number';

@@ -59,27 +59,19 @@ export class StatisticsBasesView extends BasesViewBase {
 		if (!this.rootElement || !this.stats) return;
 
 		const doc = this.rootElement.ownerDocument;
-		const container = doc.createElement('div');
-		container.setCssProps({
-			padding: "20px",
-			"overflow-y": "auto",
-			height: "100%"
+		const container = this.rootElement.createDiv({
+			cls: 'reading-tracker-stats-container',
 		});
 
-		const title = doc.createElement('h1');
-		title.textContent = 'Reading statistics';
-		title.setCssProps({
-			margin: "0 0 32px 0",
-			"font-size": "1.8em"
+		container.createEl('h1', {
+			cls: 'reading-tracker-stats-main-title',
+			text: 'Reading statistics',
 		});
-		container.appendChild(title);
 
 		this.renderActivitySection(container, doc, this.stats);
 		this.renderOverallSection(container, doc, this.stats);
 		this.renderTimeBasedSection(container, doc, this.stats);
 		this.renderCategorySection(container, doc, this.stats);
-
-		this.rootElement.appendChild(container);
 	}
 
 	private renderActivitySection(
@@ -87,17 +79,16 @@ export class StatisticsBasesView extends BasesViewBase {
 		doc: Document,
 		stats: BookStatistics
 	): void {
-		const section = doc.createElement('div');
-		section.setCssProps({ "margin-bottom": "40px" });
+		const section = container.createDiv({
+			cls: 'reading-tracker-stats-section',
+		});
 
 		section.appendChild(SectionHeader.create(doc, 'Reading activity (last 52 weeks)'));
 
-		const heatmapCard = doc.createElement('div');
-		heatmapCard.className = 'reading-tracker-heatmap-card';
+		const heatmapCard = section.createDiv({
+			cls: 'reading-tracker-heatmap-card',
+		});
 		ChartRenderer.renderActivityHeatmap(heatmapCard, doc, stats.dailyActivity);
-		section.appendChild(heatmapCard);
-
-		container.appendChild(section);
 	}
 
 	private renderOverallSection(
@@ -105,17 +96,14 @@ export class StatisticsBasesView extends BasesViewBase {
 		doc: Document,
 		stats: BookStatistics
 	): void {
-		const section = doc.createElement('div');
-		section.setCssProps({ "margin-bottom": "40px" });
+		const section = container.createDiv({
+			cls: 'reading-tracker-stats-section',
+		});
 
 		section.appendChild(SectionHeader.create(doc, 'Overview'));
 
-		const cardsGrid = doc.createElement('div');
-		cardsGrid.setCssProps({
-			display: "grid",
-			"grid-template-columns": "repeat(auto-fit, minmax(200px, 1fr))",
-			gap: "16px",
-			"margin-bottom": "16px"
+		const cardsGrid = section.createDiv({
+			cls: 'reading-tracker-stats-cards-grid',
 		});
 
 		const cards = [
@@ -150,8 +138,6 @@ export class StatisticsBasesView extends BasesViewBase {
 			cardsGrid.appendChild(StatCard.create(doc, card.label, card.value, card.color));
 		}
 
-		section.appendChild(cardsGrid);
-
 		const avgValue = stats.averageTimeToFinish > 0
 			? `${stats.averageTimeToFinish} ${stats.averageTimeToFinish === 1 ? 'day' : 'days'}`
 			: 'No data yet';
@@ -164,8 +150,6 @@ export class StatisticsBasesView extends BasesViewBase {
 			'var(--interactive-accent)'
 		);
 		section.appendChild(avgTimeEl);
-
-		container.appendChild(section);
 	}
 
 	private renderTimeBasedSection(
@@ -173,34 +157,26 @@ export class StatisticsBasesView extends BasesViewBase {
 		doc: Document,
 		stats: BookStatistics
 	): void {
-		const section = doc.createElement('div');
-		section.setCssProps({ "margin-bottom": "40px" });
-
-		const headerContainer = doc.createElement('div');
-		headerContainer.setCssProps({
-			display: "flex",
-			"justify-content": "space-between",
-			"align-items": "center",
-			"margin-bottom": "16px",
-			"padding-bottom": "8px",
-			"border-bottom": "2px solid var(--background-modifier-border)"
+		const section = container.createDiv({
+			cls: 'reading-tracker-stats-section',
 		});
 
-		const header = doc.createElement('h2');
-		header.textContent = 'Time-based statistics';
-		header.setCssProps({
-			margin: "0",
-			"font-size": "1.4em"
+		const headerContainer = section.createDiv({
+			cls: 'reading-tracker-stats-toggle-header',
 		});
-		headerContainer.appendChild(header);
+
+		headerContainer.createEl('h2', {
+			cls: 'reading-tracker-stats-toggle-title',
+			text: 'Time-based statistics',
+		});
 
 		const { container: toggleContainer, yearButton, monthButton, setActive } =
 			ToggleButtonGroup.create(doc, 'Yearly', 'Monthly');
 		headerContainer.appendChild(toggleContainer);
-		section.appendChild(headerContainer);
 
-		const contentContainer = doc.createElement('div');
-		contentContainer.setCssProps({ position: "relative" });
+		const contentContainer = section.createDiv({
+			cls: 'reading-tracker-stats-period-content',
+		});
 
 		const yearlyConfig: PeriodRenderConfig = {
 			keys: Object.keys(stats.yearlyStats).sort().reverse(),
@@ -231,9 +207,6 @@ export class StatisticsBasesView extends BasesViewBase {
 			contentContainer.empty();
 			this.renderPeriodContent(contentContainer, doc, monthlyConfig);
 		});
-
-		section.appendChild(contentContainer);
-		container.appendChild(section);
 	}
 
 	private renderPeriodContent(
@@ -242,12 +215,8 @@ export class StatisticsBasesView extends BasesViewBase {
 		config: PeriodRenderConfig
 	): void {
 		const { keys, stats, xAxisLabel, titles, formatLabel } = config;
-		const chartsGrid = doc.createElement('div');
-		chartsGrid.setCssProps({
-			display: "grid",
-			"grid-template-columns": "repeat(auto-fit, minmax(300px, 1fr))",
-			gap: "16px",
-			"margin-bottom": "16px"
+		const chartsGrid = container.createDiv({
+			cls: 'reading-tracker-stats-charts-grid',
 		});
 
 		if (keys.length === 0) {
@@ -256,7 +225,6 @@ export class StatisticsBasesView extends BasesViewBase {
 				ChartRenderer.renderEmptyChart(chartEl, doc, xAxisLabel);
 				chartsGrid.appendChild(panelContainer);
 			}
-			container.appendChild(chartsGrid);
 			return;
 		}
 
@@ -296,8 +264,6 @@ export class StatisticsBasesView extends BasesViewBase {
 		);
 		chartsGrid.appendChild(daysPanel.container);
 
-		container.appendChild(chartsGrid);
-
 		const { container: listContainer, listEl } = ChartPanel.createDetailsPanel(doc, 'Details');
 		for (const key of keys) {
 			const stat = stats[key];
@@ -324,8 +290,9 @@ export class StatisticsBasesView extends BasesViewBase {
 		doc: Document,
 		stats: BookStatistics
 	): void {
-		const section = doc.createElement('div');
-		section.setCssProps({ "margin-bottom": "40px" });
+		const section = container.createDiv({
+			cls: 'reading-tracker-stats-section',
+		});
 
 		section.appendChild(SectionHeader.create(doc, 'Category Statistics'));
 
@@ -334,7 +301,7 @@ export class StatisticsBasesView extends BasesViewBase {
 			.slice(0, 10);
 
 		const chartPanel = ChartPanel.create(doc, 'Books by Category (Top 10)');
-		chartPanel.container.setCssProps({ "max-width": "600px" });
+		chartPanel.container.classList.add('reading-tracker-category-panel');
 
 		ChartRenderer.renderBarChart(
 			chartPanel.chartEl,
@@ -346,7 +313,6 @@ export class StatisticsBasesView extends BasesViewBase {
 		);
 
 		section.appendChild(chartPanel.container);
-		container.appendChild(section);
 	}
 }
 

@@ -38,9 +38,9 @@ export class ShelfBasesView extends BasesViewBase {
 	private renderContent(): void {
 		if (!this.rootElement) return;
 
-		const doc = this.rootElement.ownerDocument;
-		const contentContainer = doc.createElement('div');
-		contentContainer.className = 'reading-tracker-shelf-content';
+		const contentContainer = this.rootElement.createDiv({
+			cls: 'reading-tracker-shelf-content',
+		});
 
 		const readingBooks = this.books
 			.filter(({ book }) => book.status === 'reading')
@@ -51,14 +51,11 @@ export class ShelfBasesView extends BasesViewBase {
 
 		if (readingBooks.length === 0 && unreadBooks.length === 0) {
 			this.renderEmptyState(contentContainer);
-			this.rootElement.appendChild(contentContainer);
 			return;
 		}
 
 		this.renderReadingSection(contentContainer, readingBooks);
 		this.renderUnreadSubSection(contentContainer, unreadBooks);
-
-		this.rootElement.appendChild(contentContainer);
 	}
 
 	/**
@@ -68,30 +65,27 @@ export class ShelfBasesView extends BasesViewBase {
 		container: HTMLElement,
 		books: Array<{ book: BookWithReadingHistory; file: TFile }>
 	): void {
-		const doc = container.ownerDocument;
-
-		const sectionHeader = doc.createElement('div');
-		sectionHeader.className = 'reading-tracker-section-header';
-
-		const titleEl = doc.createElement('h2');
-		titleEl.textContent = `Reading (${books.length})`;
-		sectionHeader.appendChild(titleEl);
-		container.appendChild(sectionHeader);
+		const sectionHeader = container.createDiv({
+			cls: 'reading-tracker-section-header',
+		});
+		sectionHeader.createEl('h2', {
+			text: `Reading (${books.length})`,
+		});
 
 		const dropZone = books.length > 0
-			? this.createReadingBooksGrid(doc, books)
-			: this.createEmptyReadingDropZone(doc);
+			? this.createReadingBooksGrid(container, books)
+			: this.createEmptyReadingDropZone(container);
 
 		this.attachDropZoneHandlers(dropZone);
-		container.appendChild(dropZone);
 	}
 
 	private createReadingBooksGrid(
-		doc: Document,
+		container: HTMLElement,
 		books: Array<{ book: BookWithReadingHistory; file: TFile }>
 	): HTMLElement {
-		const booksGrid = doc.createElement('div');
-		booksGrid.className = 'reading-tracker-section-books reading-tracker-drop-zone';
+		const booksGrid = container.createDiv({
+			cls: 'reading-tracker-section-books reading-tracker-drop-zone',
+		});
 
 		for (const { book, file } of books) {
 			const bookCard = new BookCard(this.appInstance, book, file, this.plugin);
@@ -101,19 +95,20 @@ export class ShelfBasesView extends BasesViewBase {
 		return booksGrid;
 	}
 
-	private createEmptyReadingDropZone(doc: Document): HTMLElement {
-		const dropZone = doc.createElement('div');
-		dropZone.className = 'reading-tracker-empty-drop-zone reading-tracker-drop-zone';
+	private createEmptyReadingDropZone(container: HTMLElement): HTMLElement {
+		const dropZone = container.createDiv({
+			cls: 'reading-tracker-empty-drop-zone reading-tracker-drop-zone',
+		});
 
-		const description = doc.createElement('p');
-		description.className = 'reading-tracker-empty-drop-title';
-		description.textContent = 'Drag a book from "to read" here, or click "start reading" to begin.';
-		dropZone.appendChild(description);
+		dropZone.createEl('p', {
+			cls: 'reading-tracker-empty-drop-title',
+			text: 'Drag a book from "to read" here, or click "start reading" to begin.',
+		});
 
-		const hint = doc.createElement('p');
-		hint.className = 'reading-tracker-empty-drop-hint';
-		hint.textContent = 'Use "new book" in the toolbar to add a new title.';
-		dropZone.appendChild(hint);
+		dropZone.createEl('p', {
+			cls: 'reading-tracker-empty-drop-hint',
+			text: 'Use "new book" in the toolbar to add a new title.',
+		});
 
 		return dropZone;
 	}
@@ -199,7 +194,7 @@ export class ShelfBasesView extends BasesViewBase {
 			}
 
 			await this.bookFileUpdater.startReading(file);
-			setTimeout(() => {
+			window.setTimeout(() => {
 				void this.render();
 			}, 300);
 		} catch (error) {
@@ -217,33 +212,34 @@ export class ShelfBasesView extends BasesViewBase {
 		const doc = container.ownerDocument;
 		const hasBooks = books.length > 0;
 
-		const section = doc.createElement('div');
-		section.className = 'reading-tracker-unread-subsection';
+		const section = container.createDiv({
+			cls: 'reading-tracker-unread-subsection',
+		});
 
-		const header = doc.createElement('div');
-		header.className = `reading-tracker-subsection-header${hasBooks ? ' is-collapsible' : ''}`;
+		const header = section.createDiv({
+			cls: `reading-tracker-subsection-header${hasBooks ? ' is-collapsible' : ''}`,
+		});
 
-		const titleEl = doc.createElement('h3');
-		titleEl.textContent = `To read (${books.length})`;
-		header.appendChild(titleEl);
-		section.appendChild(header);
+		header.createEl('h3', {
+			text: `To read (${books.length})`,
+		});
 
 		if (!hasBooks) {
-			const emptyContent = doc.createElement('div');
-			emptyContent.className = 'reading-tracker-unread-empty';
-			emptyContent.textContent = 'No books waiting to be read.';
-			section.appendChild(emptyContent);
-			container.appendChild(section);
+			section.createDiv({
+				cls: 'reading-tracker-unread-empty',
+				text: 'No books waiting to be read.',
+			});
 			return;
 		}
 
-		const chevron = doc.createElement('span');
-		chevron.className = 'reading-tracker-subsection-chevron';
+		const chevron = header.createSpan({
+			cls: 'reading-tracker-subsection-chevron',
+		});
 		setIcon(chevron, 'chevron-down');
-		header.appendChild(chevron);
 
-		const content = doc.createElement('div');
-		content.className = 'reading-tracker-unread-list';
+		const content = section.createDiv({
+			cls: 'reading-tracker-unread-list',
+		});
 
 		let isExpanded = true;
 		header.addEventListener('click', () => {
@@ -252,21 +248,24 @@ export class ShelfBasesView extends BasesViewBase {
 			chevron.classList.toggle('is-collapsed', !isExpanded);
 		});
 
-		const list = doc.createElement('ul');
-		list.className = 'reading-tracker-unread-ul';
+		const list = content.createEl('ul', {
+			cls: 'reading-tracker-unread-ul',
+		});
 
 		for (const { book, file } of books) {
-			list.appendChild(this.renderUnreadBookItem(doc, book, file));
+			this.renderUnreadBookItem(list, doc, book, file);
 		}
-
-		content.appendChild(list);
-		section.appendChild(content);
-		container.appendChild(section);
 	}
 
-	private renderUnreadBookItem(doc: Document, book: Book, file: TFile): HTMLLIElement {
-		const listItem = doc.createElement('li');
-		listItem.className = 'reading-tracker-unread-item';
+	private renderUnreadBookItem(
+		list: HTMLUListElement,
+		doc: Document,
+		book: Book,
+		file: TFile
+	): void {
+		const listItem = list.createEl('li', {
+			cls: 'reading-tracker-unread-item',
+		});
 		listItem.draggable = true;
 		listItem.dataset.bookPath = file.path;
 
@@ -295,7 +294,7 @@ export class ShelfBasesView extends BasesViewBase {
 			if (isDragging) {
 				e.preventDefault();
 				e.stopPropagation();
-				setTimeout(() => {
+				window.setTimeout(() => {
 					isDragging = false;
 				}, 100);
 				return;
@@ -305,26 +304,26 @@ export class ShelfBasesView extends BasesViewBase {
 			}
 		});
 
-		const info = doc.createElement('div');
-		info.className = 'reading-tracker-unread-info';
+		const info = listItem.createDiv({
+			cls: 'reading-tracker-unread-info',
+		});
 
-		const titleRow = doc.createElement('div');
-		titleRow.className = 'reading-tracker-unread-title-row';
+		const titleRow = info.createDiv({
+			cls: 'reading-tracker-unread-title-row',
+		});
 
-		const title = doc.createElement('span');
-		title.className = 'reading-tracker-unread-title';
-		title.textContent = book.title;
-		titleRow.appendChild(title);
+		titleRow.createSpan({
+			cls: 'reading-tracker-unread-title',
+			text: book.title,
+		});
 
 		const seriesLabel = formatSeriesLabel(book);
 		if (seriesLabel) {
-			const seriesPill = doc.createElement('span');
-			seriesPill.className = 'reading-tracker-series-pill';
-			seriesPill.textContent = seriesLabel;
-			titleRow.appendChild(seriesPill);
+			titleRow.createSpan({
+				cls: 'reading-tracker-series-pill',
+				text: seriesLabel,
+			});
 		}
-
-		info.appendChild(titleRow);
 
 		const metaParts: string[] = [];
 		if (book.author && book.author.length > 0) {
@@ -335,17 +334,16 @@ export class ShelfBasesView extends BasesViewBase {
 		}
 
 		if (metaParts.length > 0) {
-			const author = doc.createElement('div');
-			author.className = 'reading-tracker-unread-author';
-			author.textContent = metaParts.join(' · ');
-			info.appendChild(author);
+			info.createDiv({
+				cls: 'reading-tracker-unread-author',
+				text: metaParts.join(' · '),
+			});
 		}
 
-		listItem.appendChild(info);
-
-		const startButton = doc.createElement('button');
-		startButton.className = 'reading-tracker-start-reading';
-		startButton.textContent = 'Start reading';
+		const startButton = listItem.createEl('button', {
+			cls: 'reading-tracker-start-reading',
+			text: 'Start reading',
+		});
 		startButton.title = 'Move this book to the reading section';
 		startButton.addEventListener('mousedown', (e) => {
 			e.stopPropagation();
@@ -355,9 +353,6 @@ export class ShelfBasesView extends BasesViewBase {
 			e.stopPropagation();
 			void this.startReadingBook(file.path);
 		});
-		listItem.appendChild(startButton);
-
-		return listItem;
 	}
 
 	/**
@@ -377,30 +372,28 @@ export class ShelfBasesView extends BasesViewBase {
 	 * Render empty state when no books are added
 	 */
 	private renderEmptyState(container: HTMLElement): void {
-		const doc = container.ownerDocument;
-		const emptyState = doc.createElement('div');
-		emptyState.className = 'reading-tracker-empty-state';
+		const emptyState = container.createDiv({
+			cls: 'reading-tracker-empty-state',
+		});
 
-		const title = doc.createElement('h2');
-		title.className = 'reading-tracker-empty-title';
-		title.textContent = 'No books on your shelf yet';
-		emptyState.appendChild(title);
+		emptyState.createEl('h2', {
+			cls: 'reading-tracker-empty-title',
+			text: 'No books on your shelf yet',
+		});
 
-		const description = doc.createElement('p');
-		description.className = 'reading-tracker-empty-description';
-		description.textContent = 'Search the catalogue or add a book by hand to start keeping reading notes.';
-		emptyState.appendChild(description);
+		emptyState.createEl('p', {
+			cls: 'reading-tracker-empty-description',
+			text: 'Search the catalogue or add a book by hand to start keeping reading notes.',
+		});
 
-		const addButton = doc.createElement('button');
-		addButton.className = 'mod-cta';
-		addButton.textContent = 'Search and add book';
+		const addButton = emptyState.createEl('button', {
+			cls: 'mod-cta',
+			text: 'Search and add book',
+		});
 		addButton.addEventListener('click', (e) => {
 			e.stopPropagation();
 			e.preventDefault();
 			this.openSearchModal();
 		});
-		emptyState.appendChild(addButton);
-
-		container.appendChild(emptyState);
 	}
 }

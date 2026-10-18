@@ -5,12 +5,12 @@ export class MessageBanner {
 	static showError(containerEl: HTMLElement, message: string): void {
 		MessageBanner.clearError(containerEl);
 
-		const messageContainer = containerEl.createEl('div', {
+		const messageContainer = containerEl.createDiv({
 			cls: 'reading-tracker-message reading-tracker-message-error',
 		});
 
-		messageContainer.createEl('div', { cls: 'reading-tracker-message-icon', text: '!' });
-		messageContainer.createEl('div', { cls: 'reading-tracker-message-text', text: message });
+		messageContainer.createDiv({ cls: 'reading-tracker-message-icon', text: '!' });
+		messageContainer.createDiv({ cls: 'reading-tracker-message-text', text: message });
 
 		const closeButton = messageContainer.createEl('button', {
 			cls: 'reading-tracker-message-close',
@@ -26,19 +26,9 @@ export class MessageBanner {
 	static showSuccess(containerEl: HTMLElement, message: string): void {
 		containerEl.querySelector('.reading-tracker-message-success')?.remove();
 
-		const messageContainer = containerEl.createEl('div', {
+		const messageContainer = containerEl.createDiv({
 			cls: 'reading-tracker-message-success',
 		});
-		messageContainer.setCssProps({
-			padding: '12px',
-			'margin-top': '16px',
-			'background-color': 'transparent',
-			color: 'var(--interactive-accent)',
-			'font-size': '14px',
-			'text-align': 'center',
-			'font-weight': '500',
-		});
-
-		messageContainer.createEl('span', { text: message });
+		messageContainer.createSpan({ text: message });
 	}
 }
