@@ -18,11 +18,11 @@ function bundleCSS() {
 	const stylesDir = 'styles';
 	const cssFiles = [
 		'searchModal.css',
-		'bookshelfView.css',
+		'shelfView.css',
 		'progressModal.css',
 	];
 	
-	let bundledCSS = '/* Bookshelf Plugin Styles */\n\n';
+	let bundledCSS = '/* Reading Tracker plugin styles */\n\n';
 	
 	cssFiles.forEach(file => {
 		try {

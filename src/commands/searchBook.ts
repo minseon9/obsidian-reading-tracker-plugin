@@ -1,13 +1,13 @@
 import { App } from 'obsidian';
 import { SearchModal } from '../views/bookSearchModal';
-import BookshelfPlugin from '../main';
+import ReadingTrackerPlugin from '../main';
 
 /**
  * Search book command
  */
-export function registerSearchBookCommand(app: App, plugin: BookshelfPlugin): void {
+export function registerSearchBookCommand(app: App, plugin: ReadingTrackerPlugin): void {
 	plugin.addCommand({
-		id: 'bookshelf-search-book',
+		id: 'search-book',
 		name: 'Search book',
 		callback: () => {
 			const modal = new SearchModal(app, plugin);

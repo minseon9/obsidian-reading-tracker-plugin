@@ -1,6 +1,6 @@
 {
-	"name": "obsidian-bookshelf-plugin",
-	"version": "0.2.1",
+	"name": "obsidian-reading-tracker-plugin",
+	"version": "0.1.0",
 	"description": "Reading Tracker for Obsidian - Import books, track progress, and analyze reading habits",
 	"main": "main.js",
 	"type": "module",
@@ -8,7 +8,12 @@
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
-		"lint": "eslint ."
+		"lint": "eslint .",
+		"validate": "node scripts/validate-release.mjs",
+		"smoke": "node scripts/smoke-test.cjs",
+		"verify": "npm run build && npm run lint && npm run validate && npm run smoke",
+		"test-vault": "node scripts/setup-test-vault.mjs",
+		"deploy": "node scripts/deploy-to-vault.mjs"
 	},
 	"keywords": [
 		"obsidian",
@@ -22,7 +27,7 @@
 	],
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/minseon9/obsidian-bookshelf-plugin.git"
+		"url": "git+https://github.com/minseon9/obsidian-reading-tracker-plugin.git"
 	},
 	"author": "minseon9",
 	"license": "MIT",
@@ -38,7 +43,10 @@
 		"typescript-eslint": "8.35.1"
 	},
 	"dependencies": {
-		"obsidian": "latest",
-		"yaml": "^2.8.2"
-	}
+		"obsidian": "latest"
+	},
+	"bugs": {
+		"url": "https://github.com/minseon9/obsidian-reading-tracker-plugin/issues"
+	},
+	"homepage": "https://github.com/minseon9/obsidian-reading-tracker-plugin"
 }

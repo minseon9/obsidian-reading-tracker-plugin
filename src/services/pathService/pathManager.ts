@@ -5,8 +5,9 @@ export class PathManager {
 		return normalizePath(`${baseFolder}/Books`);
 	}
 
-	static getInteractionFolderPath(baseFolder: string): string {
-		return normalizePath(`${baseFolder}/.bookshelf`);
+	/** One note per sitting lives here. */
+	static getSessionsFolderPath(baseFolder: string): string {
+		return normalizePath(`${baseFolder}/Sessions`);
 	}
 
 	static getViewsFolderPath(baseFolder: string): string {

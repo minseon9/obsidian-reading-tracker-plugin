@@ -1,14 +1,12 @@
 /**
  * Details List Row Component
- * Single row for time-based stats (year/month label, change, books/pages, reading days)
+ * Single row for time-based stats (year/month label, books/pages, reading days)
  */
 export class DetailsListRow {
 	static create(
 		doc: Document,
 		options: {
 			label: string;
-			changeText?: string;
-			changeColor?: string;
 			rightPrimary: string;
 			rightSecondary: string;
 		}
@@ -22,30 +20,12 @@ export class DetailsListRow {
 			"border-bottom": "1px solid var(--background-modifier-border)"
 		});
 
-		const leftContainer = doc.createElement('div');
-		leftContainer.setCssProps({
-			display: "flex",
-			"flex-direction": "column",
-			gap: "4px"
-		});
-
 		const label = doc.createElement('span');
 		label.textContent = options.label;
 		label.setCssProps({
 			"font-size": "14px",
 			"font-weight": "600"
 		});
-		leftContainer.appendChild(label);
-
-		if (options.changeText !== undefined) {
-			const changeEl = doc.createElement('span');
-			changeEl.textContent = options.changeText;
-			changeEl.setCssProps({
-				"font-size": "11px",
-				color: options.changeColor ?? "var(--text-muted)"
-			});
-			leftContainer.appendChild(changeEl);
-		}
 
 		const rightContainer = doc.createElement('div');
 		rightContainer.setCssProps({
@@ -59,7 +39,7 @@ export class DetailsListRow {
 		primary.textContent = options.rightPrimary;
 		primary.setCssProps({
 			"font-size": "14px",
-			color: "var(--text-muted)"
+			color: "var(--text-normal)"
 		});
 
 		const secondary = doc.createElement('span');
@@ -71,7 +51,7 @@ export class DetailsListRow {
 
 		rightContainer.appendChild(primary);
 		rightContainer.appendChild(secondary);
-		item.appendChild(leftContainer);
+		item.appendChild(label);
 		item.appendChild(rightContainer);
 
 		return item;

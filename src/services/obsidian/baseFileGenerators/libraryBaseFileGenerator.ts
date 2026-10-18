@@ -1,14 +1,15 @@
-import type { BookshelfSettings } from "../../../settings/types";
+import type { ReadingTrackerSettings } from "../../../settings/types";
+import { PathManager } from "../../pathService/pathManager";
 
 export class LibraryBaseFileGenerator {
-	static generate(settings: BookshelfSettings): string {
-		const booksFolder = `${settings.bookFolder}/Books`;
+	static generate(settings: ReadingTrackerSettings): string {
+		const booksFolder = PathManager.getBooksFolderPath(settings.bookFolder);
 		
 		return `filters:
   and:
     - file.path.startsWith("${booksFolder}/")
     - file.path.endsWith(".md")
-    - note.status == "unread" || note.status == "finished"
+    - note.status == "unread" || note.status == "finished" || note.status == "abandoned"
 
 order:
   - note.status
@@ -33,9 +34,15 @@ columns:
   - id: note.read_finished
     display-name: Finished
     type: date
+  - id: note.rating
+    display-name: Rating
+    type: number
+  - id: note.series
+    display-name: Series
+    type: text
 
 views:
-  - type: bookshelfLibraryView
+  - type: reading-tracker-library
     name: Library
 `;
 	}

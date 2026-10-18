@@ -21,6 +21,15 @@ export default tseslint.config(
 	},
 	...obsidianmd.configs.recommended,
 	{
+		// Build and verification scripts run in Node, not in Obsidian.
+		files: ['scripts/**/*.{mjs,cjs,js}', '*.mjs'],
+		languageOptions: {
+			globals: {
+				...globals.node,
+			},
+		},
+	},
+	{
 		plugins: { obsidianmd },
 		rules: {
 			// Relax some strict rules for better developer experience
@@ -39,10 +48,10 @@ export default tseslint.config(
 						"LDAP", "SAML", "SDK", "IDE", "CLI", "GUI", "CRUD", "REST", "SOAP",
 						"CPU", "GPU", "RAM", "SSD", "USB", "UI", "OK", "RSS", "S3", "WebDAV",
 						"ID", "UUID", "GUID", "SHA", "MD5", "ASCII", "UTF-8", "UTF-16", "DOM",
-						"CDN", "FAQ", "AI", "ML",
+						"CDN", "FAQ", "AI", "ML", "YYYY-MM-DD", "YYYY", "MM", "DD",
 						"UTC", "EST", "ISBN",
 					],
-					ignoreWords: ["Korea"],
+					ignoreWords: ["Korea", "YYYY", "MM", "DD"],
 				},
 			],
 		},
@@ -52,8 +61,6 @@ export default tseslint.config(
 			"node_modules/",
 			"dist/",
 			"main.js",
-			"esbuild.config.mjs",
-			"version-bump.mjs",
 			"versions.json",
 		],
 	},

@@ -1,0 +1,496 @@
+/* Shelf, Library, and Statistics View Styles */
+
+/* Hide the default Bases "New" button when a Reading Tracker view is active */
+.reading-tracker-view-active .bases-toolbar-new-item-menu {
+	display: none !important;
+}
+
+/* Show the Reading Tracker "New book" button */
+.reading-tracker-bases-new-book-btn {
+	display: flex !important;
+}
+
+.reading-tracker-bases-new-book-btn .text-icon-button {
+	cursor: pointer;
+	pointer-events: auto !important;
+	user-select: none;
+}
+
+.reading-tracker-bases-new-book-btn .text-icon-button:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.reading-tracker-bases-view {
+	pointer-events: auto;
+	user-select: text;
+}
+
+.reading-tracker-shelf-content {
+	flex: 1;
+	overflow-y: auto;
+	padding: 16px;
+}
+
+.reading-tracker-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 12px 16px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.reading-tracker-section-header {
+	margin-bottom: 16px;
+	padding-bottom: 8px;
+	border-bottom: 2px solid var(--background-modifier-border);
+}
+
+.reading-tracker-section-header h2 {
+	margin: 0;
+	font-size: 1.35em;
+	font-weight: 600;
+}
+
+.reading-tracker-section-books {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+	gap: 16px;
+	min-height: 100px;
+}
+
+/* Horizontal Compact Book Card */
+.reading-tracker-book-card {
+	display: flex;
+	flex-direction: column;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	padding: 14px;
+	background-color: var(--background-primary);
+	cursor: pointer;
+	transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.reading-tracker-book-card:hover {
+	border-color: var(--interactive-accent);
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.reading-tracker-card-body {
+	display: flex;
+	gap: 14px;
+	align-items: stretch;
+	flex: 1;
+}
+
+.reading-tracker-book-cover {
+	width: 84px;
+	height: 126px;
+	flex-shrink: 0;
+	border-radius: 5px;
+	overflow: hidden;
+}
+
+.reading-tracker-book-cover img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	border-radius: 5px;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
+}
+
+.reading-tracker-cover-placeholder {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 5px;
+	color: var(--text-faint);
+}
+
+.reading-tracker-cover-placeholder-icon svg {
+	width: 24px;
+	height: 24px;
+}
+
+.reading-tracker-book-info {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.reading-tracker-book-title-row {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.reading-tracker-book-title {
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--text-normal);
+	line-height: 1.35;
+	word-break: break-word;
+}
+
+.reading-tracker-series-pill {
+	font-size: 11px;
+	font-weight: 500;
+	padding: 1px 7px;
+	border-radius: 10px;
+	background-color: var(--background-secondary);
+	color: var(--text-muted);
+	border: 1px solid var(--background-modifier-border);
+	white-space: nowrap;
+}
+
+.reading-tracker-book-author {
+	font-size: 12.5px;
+	color: var(--text-muted);
+	line-height: 1.3;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Progress Bar */
+.reading-tracker-progress-container {
+	margin-top: 2px;
+}
+
+.reading-tracker-progress-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	margin-bottom: 4px;
+}
+
+.reading-tracker-progress-position {
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--text-normal);
+}
+
+.reading-tracker-progress-percent {
+	font-size: 12.5px;
+	font-weight: 700;
+	color: var(--interactive-accent);
+}
+
+.reading-tracker-progress-bar {
+	width: 100%;
+	height: 6px;
+	background-color: var(--background-modifier-border);
+	border-radius: 3px;
+	overflow: hidden;
+	margin-bottom: 4px;
+}
+
+.reading-tracker-progress-fill {
+	height: 100%;
+	background-color: var(--interactive-accent);
+	border-radius: 3px;
+	transition: width 0.25s ease;
+}
+
+.reading-tracker-progress-sub {
+	font-size: 11px;
+	color: var(--text-faint);
+}
+
+.reading-tracker-no-total-hint {
+	font-size: 11.5px;
+	color: var(--text-muted);
+	padding: 6px 8px;
+	background-color: var(--background-secondary);
+	border-radius: 4px;
+}
+
+/* Sitting & Date metadata on BookCard */
+.reading-tracker-card-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 10px;
+	font-size: 11.5px;
+	color: var(--text-muted);
+	margin-top: 2px;
+}
+
+.reading-tracker-meta-item.is-accent {
+	color: var(--text-normal);
+	font-weight: 500;
+}
+
+/* Card Actions */
+.reading-tracker-card-actions {
+	margin-top: auto;
+	padding-top: 6px;
+	display: flex;
+	justify-content: flex-start;
+}
+
+.reading-tracker-record-button {
+	font-size: 12px;
+	padding: 4px 12px;
+	height: 28px;
+	cursor: pointer;
+}
+
+/* Empty Reading Drop Zone */
+.reading-tracker-empty-drop-zone {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 40px 24px;
+	min-height: 150px;
+	border: 2px dashed var(--background-modifier-border);
+	border-radius: 8px;
+	text-align: center;
+	color: var(--text-muted);
+}
+
+.reading-tracker-empty-drop-title {
+	margin: 0;
+	font-size: 13.5px;
+	font-weight: 500;
+}
+
+.reading-tracker-empty-drop-hint {
+	margin: 6px 0 0 0;
+	font-size: 12px;
+	color: var(--text-faint);
+}
+
+.reading-tracker-drop-zone {
+	transition: background-color 0.15s, border-color 0.15s;
+}
+
+.reading-tracker-drop-zone.drag-over {
+	background-color: var(--background-modifier-hover);
+	border-color: var(--interactive-accent);
+}
+
+/* Unread Subsection */
+.reading-tracker-unread-subsection {
+	margin-top: 28px;
+}
+
+.reading-tracker-subsection-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 4px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	user-select: none;
+}
+
+.reading-tracker-subsection-header.is-collapsible {
+	cursor: pointer;
+}
+
+.reading-tracker-subsection-header.is-collapsible:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.reading-tracker-subsection-header h3 {
+	margin: 0;
+	font-size: 1.05em;
+	font-weight: 600;
+	color: var(--text-muted);
+}
+
+.reading-tracker-subsection-chevron {
+	display: inline-flex;
+	align-items: center;
+	color: var(--text-muted);
+	transition: transform 0.2s ease;
+}
+
+.reading-tracker-subsection-chevron.is-collapsed {
+	transform: rotate(-90deg);
+}
+
+.reading-tracker-unread-list {
+	max-height: 320px;
+	overflow-y: auto;
+	margin-top: 4px;
+}
+
+.reading-tracker-unread-list.is-collapsed {
+	display: none;
+}
+
+.reading-tracker-unread-ul {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.reading-tracker-unread-empty {
+	padding: 16px;
+	text-align: center;
+	font-size: 12.5px;
+	color: var(--text-muted);
+}
+
+.reading-tracker-unread-item {
+	padding: 8px 10px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	cursor: pointer;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 12px;
+	transition: background-color 0.15s;
+}
+
+.reading-tracker-unread-item:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.reading-tracker-unread-item.dragging {
+	opacity: 0.5;
+}
+
+.reading-tracker-unread-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.reading-tracker-unread-title-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	margin-bottom: 2px;
+}
+
+.reading-tracker-unread-title {
+	font-weight: 500;
+	font-size: 13.5px;
+	color: var(--text-normal);
+}
+
+.reading-tracker-unread-author {
+	font-size: 11.5px;
+	color: var(--text-muted);
+}
+
+.reading-tracker-start-reading {
+	flex-shrink: 0;
+	padding: 2px 10px;
+	font-size: 12px;
+	cursor: pointer;
+}
+
+/* Empty State (No books added) */
+.reading-tracker-empty-state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 60px 20px;
+	text-align: center;
+}
+
+.reading-tracker-empty-icon {
+	font-size: 48px;
+	margin-bottom: 12px;
+	opacity: 0.6;
+}
+
+.reading-tracker-empty-title {
+	font-size: 1.35em;
+	font-weight: 600;
+	color: var(--text-normal);
+	margin: 0 0 8px 0;
+}
+
+.reading-tracker-empty-description {
+	font-size: 13.5px;
+	color: var(--text-muted);
+	margin: 0 0 20px 0;
+	max-width: 380px;
+}
+
+/* Notes input in session modal */
+.reading-tracker-notes-input {
+	width: 100%;
+	min-height: 120px;
+	padding: 10px 12px;
+	font-size: 13.5px;
+	line-height: 1.55;
+	font-family: var(--font-text);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	background-color: var(--background-primary);
+	color: var(--text-normal);
+	resize: vertical;
+}
+
+.reading-tracker-notes-input:focus {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: -2px;
+}
+
+/* Reading Activity Heatmap (52 Weeks) */
+.reading-tracker-heatmap-card {
+	padding: 16px;
+	background-color: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	overflow-x: auto;
+}
+
+.reading-tracker-heatmap-wrapper {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.reading-tracker-heatmap-grid {
+	display: grid;
+	grid-template-rows: repeat(7, 12px);
+	grid-auto-flow: column;
+	grid-auto-columns: 12px;
+	gap: 3px;
+}
+
+.reading-tracker-heatmap-cell {
+	width: 12px;
+	height: 12px;
+	border-radius: 2px;
+	background-color: var(--background-modifier-border);
+}
+
+.reading-tracker-heatmap-cell.is-level-1 {
+	background-color: var(--interactive-accent);
+	opacity: 0.45;
+}
+
+.reading-tracker-heatmap-cell.is-level-2 {
+	background-color: var(--interactive-accent);
+	opacity: 0.75;
+}
+
+.reading-tracker-heatmap-cell.is-level-3 {
+	background-color: var(--interactive-accent);
+	opacity: 1;
+}
+
+.reading-tracker-heatmap-legend {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 4px;
+	font-size: 11px;
+	color: var(--text-muted);
+}

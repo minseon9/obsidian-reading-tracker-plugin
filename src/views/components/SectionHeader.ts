@@ -1,3 +1,5 @@
+import { setIcon } from 'obsidian';
+
 /**
  * Section Header Component
  * Creates consistent section headers with optional toggle functionality
@@ -47,9 +49,10 @@ export class SectionHeader {
 		});
 
 		const chevron = doc.createElement('span');
-		chevron.textContent = '?';
+		setIcon(chevron, 'chevron-down');
 		chevron.setCssProps({
-			"font-size": "12px",
+			display: "inline-flex",
+			"align-items": "center",
 			color: "var(--text-muted)",
 			transition: "transform 0.2s"
 		});

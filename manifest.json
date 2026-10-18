@@ -1,9 +1,9 @@
 {
 	"id": "reading-tracker",
 	"name": "Reading Tracker",
-	"version": "0.2.1",
-	"minAppVersion": "0.15.0",
-	"description": "Reading Tracker for importing books from Open Library, organizing your reading shelves, and analyzing your reading habits.",
+	"version": "0.1.0",
+	"minAppVersion": "1.10.1",
+	"description": "One note per sitting with a book: how far you got, how long, and the passages you copied out.",
 	"author": "minseon9",
 	"authorUrl": "https://github.com/minseon9",
 	"isDesktopOnly": true,

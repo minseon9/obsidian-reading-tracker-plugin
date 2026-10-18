@@ -20,10 +20,27 @@ jobs:
           node-version: "20.x"
           cache: "npm"
 
-      - name: Build plugin
+      - name: Verify tag matches manifest version
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          manifest_version="$(jq -r .version manifest.json)"
+          if [ "$tag" != "$manifest_version" ]; then
+            echo "::error::Tag '$tag' does not match manifest.json version '$manifest_version'."
+            echo "Obsidian requires the release tag to exactly match manifest.json (no leading 'v')."
+            exit 1
+          fi
+          if ! jq -e --arg v "$tag" 'has($v)' versions.json > /dev/null; then
+            echo "::error::versions.json has no entry for '$tag'. Run 'npm version <x.y.z>' to add one."
+            exit 1
+          fi
+
+      - name: Build and verify
         run: |
           npm ci
           npm run build
+          npm run lint
+          npm run validate
+          npm run smoke
 
       - name: Create release
         env:
@@ -33,5 +50,5 @@ jobs:
 
           gh release create "$tag" \
             --title="$tag" \
-            --draft \
+            --generate-notes \
             main.js manifest.json styles.css

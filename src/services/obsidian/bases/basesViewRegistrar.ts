@@ -1,44 +1,34 @@
-import BookshelfPlugin from "../../../main";
+import ReadingTrackerPlugin from "../../../main";
 import {requireApiVersion} from "obsidian";
-import {registerBasesView, unregisterBasesView} from "./basesPluginClient";
-import { BookshelfBasesView } from "../../../views/bases/bookshelf";
-import { ReadingBasesView } from "../../../views/bases/reading";
+import {refreshBasesViews, registerBasesView, unregisterBasesView} from "./basesPluginClient";
+import { ShelfBasesView } from "../../../views/bases/shelf";
 import { LibraryBasesView } from "../../../views/bases/library";
 import { StatisticsBasesView } from "../../../views/bases/statistics";
 
 /**
- * Register Bookshelf views with Bases plugin
+ * Register Reading Tracker views with the Bases plugin
  * Requires Obsidian 1.10.1+ (public Bases API with groupBy support)
  */
-export async function registerBasesBookshelfView(plugin: BookshelfPlugin): Promise<void> {
+export async function registerBasesViews(plugin: ReadingTrackerPlugin): Promise<void> {
 	// All views now require Obsidian 1.10.1+ (public Bases API with groupBy support)
 	if (!requireApiVersion("1.10.1")) {
-		console.warn("[Bookshelf][Bases] Obsidian 1.10.1+ required for Bases integration");
+		console.debug("[Reading Tracker][Bases] Obsidian 1.10.1+ required for Bases integration");
 		return;
 	}
 
 	const attemptRegistration = (): boolean => {
 		try {
-			// Register Bookshelf View (all books)
-			const bookshelfSuccess = registerBasesView(plugin, "bookshelfView", {
-				name: "Bookshelf view",
+			// Register the shelf view (books to read and in progress)
+			const shelfSuccess = registerBasesView(plugin, "reading-tracker-shelf", {
+				name: "Shelf",
 				icon: "book-open",
 				factory: (controller: unknown, containerEl: HTMLElement) => {
-					return new BookshelfBasesView(controller, containerEl, plugin);
-				},
-			});
-
-			// Register Reading View
-			const readingSuccess = registerBasesView(plugin, "bookshelfReadingView", {
-				name: "Reading books",
-				icon: "book-open-text",
-				factory: (controller: unknown, containerEl: HTMLElement) => {
-					return new ReadingBasesView(controller, containerEl, plugin);
+					return new ShelfBasesView(controller, containerEl, plugin);
 				},
 			});
 
 			// Register Library View
-			const librarySuccess = registerBasesView(plugin, "bookshelfLibraryView", {
+			const librarySuccess = registerBasesView(plugin, "reading-tracker-library", {
 				name: "Library",
 				icon: "library",
 				factory: (controller: unknown, containerEl: HTMLElement) => {
@@ -47,7 +37,7 @@ export async function registerBasesBookshelfView(plugin: BookshelfPlugin): Promi
 			});
 
 			// Register Statistics View
-			const statisticsSuccess = registerBasesView(plugin, "bookshelfStatisticsView", {
+			const statisticsSuccess = registerBasesView(plugin, "reading-tracker-statistics", {
 				name: "Reading statistics",
 				icon: "bar-chart",
 				factory: (controller: unknown, containerEl: HTMLElement) => {
@@ -55,31 +45,15 @@ export async function registerBasesBookshelfView(plugin: BookshelfPlugin): Promi
 				},
 			});
 
-			if (!bookshelfSuccess && !readingSuccess && !librarySuccess && !statisticsSuccess) {
-				console.debug("[Bookshelf][Bases] Bases plugin not available for registration");
+			if (!shelfSuccess && !librarySuccess && !statisticsSuccess) {
+				console.debug("[Reading Tracker][Bases] Bases plugin not available for registration");
 				return false;
 			}
 
-		// Refresh existing Bases views
-		plugin.app.workspace.iterateAllLeaves((leaf) => {
-			if (leaf.view?.getViewType?.() === "bases") {
-				const view = leaf.view as { refresh?: () => void };
-				if (typeof view.refresh === "function") {
-					try {
-						view.refresh();
-					} catch (refreshError) {
-						console.debug(
-							"[Bookshelf][Bases] Error refreshing view:",
-							refreshError
-						);
-					}
-				}
-			}
-		});
-
+			refreshBasesViews(plugin.app);
 			return true;
 		} catch (error) {
-			console.warn("[Bookshelf][Bases] Registration attempt failed:", error);
+			console.debug("[Reading Tracker][Bases] Registration attempt failed:", error);
 			return false;
 		}
 	};
@@ -97,21 +71,20 @@ export async function registerBasesBookshelfView(plugin: BookshelfPlugin): Promi
 		}
 	}
 
-	console.warn("[Bookshelf][Bases] Failed to register views after multiple attempts");
+	console.debug("[Reading Tracker][Bases] Failed to register views after multiple attempts");
 }
 
 /**
- * Unregister Bookshelf views from Bases plugin
+ * Unregister Reading Tracker views from the Bases plugin
  */
-export function unregisterBasesViews(plugin: BookshelfPlugin): void {
+export function unregisterBasesViews(plugin: ReadingTrackerPlugin): void {
 	try {
 		// Unregister all views
-		unregisterBasesView(plugin, "bookshelfView");
-		unregisterBasesView(plugin, "bookshelfReadingView");
-		unregisterBasesView(plugin, "bookshelfLibraryView");
-		unregisterBasesView(plugin, "bookshelfStatisticsView");
+		unregisterBasesView(plugin, "reading-tracker-shelf");
+		unregisterBasesView(plugin, "reading-tracker-library");
+		unregisterBasesView(plugin, "reading-tracker-statistics");
 	} catch (error) {
-		console.error("[Bookshelf][Bases] Error during view unregistration:", error);
+		console.error("[Reading Tracker][Bases] Error during view unregistration:", error);
 	}
 }
 

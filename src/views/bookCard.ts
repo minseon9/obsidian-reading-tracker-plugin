@@ -1,411 +1,241 @@
-import { App, TFile } from 'obsidian';
-import { Book } from '../models/book';
-import BookshelfPlugin from '../main';
-import { ProgressUpdateModal } from './progressUpdateModal';
+import { App, TFile, setIcon } from 'obsidian';
+import { Book, formatSeriesLabel } from '../models/book';
+import { BookWithReadingHistory } from '../models/bookWithReadingHistory';
+import {
+	ReadingUnit,
+	calculateProgressPercent,
+	effectiveTotal,
+	formatAmount,
+	formatPosition,
+	toReadingUnit,
+} from '../models/readingUnit';
+import { dayOf, formatDurationMinutes } from '../utils/dateUtils';
+import ReadingTrackerPlugin from '../main';
+import { RecordSessionModal } from './recordSessionModal';
+
+type BookCardModel = Book & Partial<Pick<BookWithReadingHistory, 'lastReadDate' | 'sessionCount' | 'minutesRead' | 'quoteCount'>>;
 
 /**
- * Book card component for rendering book items in Bookshelf View
+ * Compact desktop card for a book currently being read on the shelf.
  */
 export class BookCard {
 	private app: App;
-	private book: Book;
+	private book: BookCardModel;
 	private file: TFile | null;
-	private plugin: BookshelfPlugin | null;
+	private plugin: ReadingTrackerPlugin | null;
 
-	constructor(app: App, book: Book, file: TFile | null = null, plugin?: BookshelfPlugin) {
+	constructor(app: App, book: BookCardModel, file: TFile | null = null, plugin?: ReadingTrackerPlugin) {
 		this.app = app;
 		this.book = book;
 		this.file = file;
 		this.plugin = plugin || null;
 	}
 
-	/**
-	 * Render book card based on status
-	 * @param layout Layout type ('grid' | 'list')
-	 * @returns HTMLElement
-	 */
-	render(layout: 'grid' | 'list' = 'grid'): HTMLElement {
-		if (this.book.status === 'reading') {
-			return this.renderReadingBook(layout);
-		} else {
-			return this.renderShelfBook(layout);
-		}
-	}
-
-	/**
-	 * Render reading book with cover image (enhanced with more info)
-	 */
-	private renderReadingBook(layout: 'grid' | 'list'): HTMLElement {
+	render(): HTMLElement {
 		const card = document.createElement('div');
-		card.className = `bookshelf-book-card bookshelf-book-reading bookshelf-layout-${layout}`;
-		// Make card larger with more space for information
-		card.setCssProps({
-			"min-height": "420px",
-			display: "flex",
-			"flex-direction": "column"
+		card.className = 'reading-tracker-book-card reading-tracker-book-reading';
+
+		const bodyRow = card.createEl('div', { cls: 'reading-tracker-card-body' });
+		this.renderCover(bodyRow);
+
+		const infoContainer = bodyRow.createEl('div', {
+			cls: 'reading-tracker-book-info',
 		});
 
-		// Cover image (larger)
-		if (this.book.coverUrl) {
-			const coverContainer = card.createEl('div', {
-				cls: 'bookshelf-book-cover',
-			});
-			coverContainer.setCssProps({
-				width: "100%",
-				height: "240px",
-				"margin-bottom": "16px",
-				"flex-shrink": "0"
-			});
+		this.renderHeader(infoContainer);
+		this.renderProgressSection(infoContainer);
+		this.renderReadingMeta(infoContainer);
+		this.renderActions(infoContainer);
 
+		this.attachCardOpenHandler(card);
+
+		return card;
+	}
+
+	private renderCover(parent: HTMLElement): void {
+		const coverContainer = parent.createEl('div', {
+			cls: 'reading-tracker-book-cover',
+		});
+
+		if (this.book.coverUrl) {
 			const coverImg = coverContainer.createEl('img', {
 				attr: {
-					src: this.book.coverUrl || '',
+					src: this.book.coverUrl,
 					alt: this.book.title || 'Book cover',
 				},
 			});
-			coverImg.setCssProps({
-				width: "100%",
-				height: "100%",
-				"object-fit": "cover",
-				"border-radius": "6px",
-				"box-shadow": "0 2px 8px rgba(0, 0, 0, 0.15)"
-			});
-
 			coverImg.addEventListener('error', () => {
-				coverImg.setCssProps({ display: "none" });
-			});
-		}
-
-		// Book info container (flexible, takes remaining space)
-		const infoContainer = card.createEl('div', {
-			cls: 'bookshelf-book-info',
-		});
-		infoContainer.setCssProps({
-			padding: "0 12px 12px 12px",
-			flex: "1",
-			display: "flex",
-			"flex-direction": "column"
-		});
-
-		// Title
-		const titleEl = infoContainer.createEl('div', {
-			cls: 'bookshelf-book-title',
-			text: this.book.title,
-		});
-		titleEl.setCssProps({
-			"font-size": "17px",
-			"font-weight": "600",
-			"margin-bottom": "8px",
-			"line-height": "1.4",
-			color: "var(--text-normal)"
-		});
-
-		// Author
-		if (this.book.author && this.book.author.length > 0) {
-			const authorEl = infoContainer.createEl('div', {
-				cls: 'bookshelf-book-author',
-				text: this.book.author.join(', '),
-			});
-			authorEl.setCssProps({
-				"font-size": "13px",
-				color: "var(--text-muted)",
-				"margin-bottom": "16px"
-			});
-		}
-
-		// Get last read date from book data (optional extended field)
-		const lastReadDate = (this.book as Book & { lastReadDate?: string }).lastReadDate;
-
-		// Reading status and dates section (always show for reading books)
-		const statusSection = infoContainer.createEl('div', {
-			cls: 'bookshelf-reading-status',
-		});
-		statusSection.setCssProps({
-			"font-size": "12px",
-			color: "var(--text-muted)",
-			"margin-bottom": "16px",
-			padding: "12px",
-			"background-color": "var(--background-secondary)",
-			"border-radius": "6px",
-			display: "flex",
-			"flex-direction": "column",
-			gap: "8px"
-		});
-
-		// Started date (always show if available)
-		if (this.book.readStarted) {
-			const startedRow = statusSection.createEl('div');
-			startedRow.setCssProps({
-				display: "flex",
-				"justify-content": "space-between",
-				"align-items": "center"
-			});
-			const startedLabel = startedRow.createEl('span', { text: 'Started:' });
-			startedLabel.setCssProps({
-				color: "var(--text-faint)",
-				"font-size": "11px"
-			});
-			// Handle both "YYYY-MM-DD HH:mm:ss" and ISO formats
-			const dateStr = typeof this.book.readStarted === 'string' 
-				? (this.book.readStarted.includes('T') 
-					? this.book.readStarted.split('T')[0] 
-					: this.book.readStarted.split(' ')[0])
-				: String(this.book.readStarted);
-			const startedValue = startedRow.createEl('span', { text: dateStr });
-			startedValue.setCssProps({
-				"font-weight": "600",
-				color: "var(--text-normal)",
-				"font-size": "12px"
+				coverImg.remove();
+				this.renderCoverPlaceholder(coverContainer);
 			});
 		} else {
-			// Show placeholder if not started yet
-			const startedRow = statusSection.createEl('div');
-			startedRow.setCssProps({
-				display: "flex",
-				"justify-content": "space-between",
-				"align-items": "center"
-			});
-			const startedLabel = startedRow.createEl('span', { text: 'Started:' });
-			startedLabel.setCssProps({
-				color: "var(--text-faint)",
-				"font-size": "11px"
-			});
-			const startedValue = startedRow.createEl('span', { text: 'Not started' });
-			startedValue.setCssProps({
-				"font-weight": "400",
-				color: "var(--text-muted)",
-				"font-size": "12px",
-				"font-style": "italic"
-			});
+			this.renderCoverPlaceholder(coverContainer);
 		}
-
-		// Last read date (always show if available)
-		if (lastReadDate) {
-			const lastReadRow = statusSection.createEl('div');
-			lastReadRow.setCssProps({
-				display: "flex",
-				"justify-content": "space-between",
-				"align-items": "center"
-			});
-			const lastReadLabel = lastReadRow.createEl('span', { text: 'Last read:' });
-			lastReadLabel.setCssProps({
-				color: "var(--text-faint)",
-				"font-size": "11px"
-			});
-			const lastReadValue = lastReadRow.createEl('span', { text: lastReadDate ?? '' });
-			lastReadValue.setCssProps({
-				"font-weight": "700",
-				color: "var(--interactive-accent)",
-				"font-size": "12px"
-			});
-		} else if (this.book.readStarted) {
-			// Show "Not yet" if started but no reading history
-			const lastReadRow = statusSection.createEl('div');
-			lastReadRow.setCssProps({
-				display: "flex",
-				"justify-content": "space-between",
-				"align-items": "center"
-			});
-			const lastReadLabel = lastReadRow.createEl('span', { text: 'Last read:' });
-			lastReadLabel.setCssProps({
-				color: "var(--text-faint)",
-				"font-size": "11px"
-			});
-			const lastReadValue = lastReadRow.createEl('span', { text: 'Not yet' });
-			lastReadValue.setCssProps({
-				"font-weight": "400",
-				color: "var(--text-muted)",
-				"font-size": "12px",
-				"font-style": "italic"
-			});
-		}
-
-		// Progress section (enhanced) - always show if totalPages is available
-		if (this.book.totalPages !== undefined && this.book.totalPages !== null && this.book.totalPages > 0) {
-			const currentPage = this.book.readPage || 0;
-			const progress = Math.min((currentPage / this.book.totalPages) * 100, 100);
-			const remainingPages = Math.max(0, this.book.totalPages - currentPage);
-			
-			const progressContainer = infoContainer.createEl('div', {
-				cls: 'bookshelf-progress-container',
-			});
-			progressContainer.setCssProps({ "margin-bottom": "16px" });
-
-			// Progress text with more details
-			const progressHeader = progressContainer.createEl('div');
-			progressHeader.setCssProps({
-				display: "flex",
-				"justify-content": "space-between",
-				"align-items": "center",
-				"margin-bottom": "8px"
-			});
-			
-			const progressLabel = progressHeader.createEl('div');
-			progressLabel.setCssProps({
-				"font-size": "12px",
-				"font-weight": "600",
-				color: "var(--text-normal)"
-			});
-			progressLabel.textContent = 'Progress';
-			
-			const progressPercent = progressHeader.createEl('div');
-			progressPercent.setCssProps({
-				"font-size": "14px",
-				"font-weight": "700",
-				color: "var(--interactive-accent)"
-			});
-			progressPercent.textContent = `${Math.round(progress)}%`;
-
-			// Progress bar
-			const progressBar = progressContainer.createEl('div', {
-				cls: 'bookshelf-progress-bar',
-			});
-			progressBar.setCssProps({
-				width: "100%",
-				height: "10px",
-				"background-color": "var(--background-modifier-border)",
-				"border-radius": "5px",
-				overflow: "hidden",
-				"margin-bottom": "6px"
-			});
-
-			const progressFill = progressContainer.createEl('div', {
-				cls: 'bookshelf-progress-fill',
-			});
-			progressFill.setCssProps({
-				width: `${progress}%`,
-				height: "100%",
-				"background-color": "var(--interactive-accent)",
-				transition: "width 0.3s",
-				"border-radius": "5px"
-			});
-
-			progressBar.appendChild(progressFill);
-
-			// Page details
-			const pageDetails = progressContainer.createEl('div');
-			pageDetails.setCssProps({
-				display: "flex",
-				"justify-content": "space-between",
-				"font-size": "11px",
-				color: "var(--text-muted)"
-			});
-			
-			const pagesRead = pageDetails.createEl('span');
-			pagesRead.textContent = `Read: ${currentPage} pages`;
-			
-			const pagesRemaining = pageDetails.createEl('span');
-			pagesRemaining.textContent = `Remaining: ${remainingPages} pages`;
-		} else {
-			// Show message when total pages is not set
-			const noTotalContainer = infoContainer.createEl('div');
-			noTotalContainer.setCssProps({
-				padding: "12px",
-				background: "var(--background-secondary)",
-				"border-radius": "6px",
-				"margin-bottom": "16px"
-			});
-			
-			const noTotalText = noTotalContainer.createEl('div');
-			noTotalText.setCssProps({
-				"font-size": "12px",
-				color: "var(--text-muted)",
-				"text-align": "center"
-			});
-			noTotalText.textContent = 'Please set total pages in frontmatter to track progress';
-		}
-
-		// Update progress button (for reading books)
-		if (this.plugin && this.file) {
-			const buttonContainer = infoContainer.createEl('div', {
-				cls: 'bookshelf-card-actions',
-			});
-			buttonContainer.setCssProps({
-				"margin-top": "auto",
-				"padding-top": "12px"
-			});
-
-			const updateButton = buttonContainer.createEl('button', {
-				cls: 'mod-cta',
-				text: 'Update progress',
-			});
-			updateButton.setCssProps({
-				width: "100%",
-				padding: "10px",
-				"font-size": "13px",
-				"font-weight": "600"
-			});
-
-			updateButton.addEventListener('click', (e) => {
-				e.stopPropagation(); // Prevent card click
-				const modal = new ProgressUpdateModal(this.app, this.plugin!, this.file!);
-				modal.open();
-			});
-		}
-
-		// Click handler (for opening note)
-		if (this.file) {
-			card.addEventListener('click', (e) => {
-				// Don't open if clicking on button
-				if ((e.target as HTMLElement).closest('button')) {
-					return;
-				}
-				void this.app.workspace.openLinkText(this.file!.path, '', false);
-			});
-			card.setCssProps({ cursor: "pointer" });
-		}
-
-		return card;
 	}
 
-	/**
-	 * Render shelf book (unread/finished) with spine style
-	 */
-	private renderShelfBook(layout: 'grid' | 'list'): HTMLElement {
-		const card = document.createElement('div');
-		card.className = `bookshelf-book-card bookshelf-book-shelf bookshelf-status-${this.book.status} bookshelf-layout-${layout}`;
+	private renderCoverPlaceholder(container: HTMLElement): void {
+		const placeholder = container.createEl('div', {
+			cls: 'reading-tracker-cover-placeholder',
+		});
+		const iconEl = placeholder.createEl('span', {
+			cls: 'reading-tracker-cover-placeholder-icon',
+		});
+		setIcon(iconEl, 'book-open');
+	}
 
-		// Spine container
-		const spineContainer = card.createEl('div', {
-			cls: 'bookshelf-book-spine',
+	private renderHeader(infoContainer: HTMLElement): void {
+		const titleRow = infoContainer.createEl('div', {
+			cls: 'reading-tracker-book-title-row',
 		});
 
-		// Title on spine
-		spineContainer.createEl('div', {
-			cls: 'bookshelf-spine-title',
+		titleRow.createEl('div', {
+			cls: 'reading-tracker-book-title',
 			text: this.book.title,
 		});
 
-		// Author on spine
+		const seriesLabel = formatSeriesLabel(this.book);
+		if (seriesLabel) {
+			titleRow.createEl('span', {
+				cls: 'reading-tracker-series-pill',
+				text: seriesLabel,
+			});
+		}
+
 		if (this.book.author && this.book.author.length > 0) {
-			spineContainer.createEl('div', {
-				cls: 'bookshelf-spine-author',
+			infoContainer.createEl('div', {
+				cls: 'reading-tracker-book-author',
 				text: this.book.author.join(', '),
 			});
 		}
+	}
 
-		// Status badge
-		spineContainer.createEl('div', {
-			cls: 'bookshelf-status-badge',
-			text: this.book.status === 'finished' ? 'Finished' : 'Unread',
+	private renderProgressSection(infoContainer: HTMLElement): void {
+		const unit: ReadingUnit = toReadingUnit(this.book.readingUnit);
+		const total = effectiveTotal(this.book.totalPages, unit);
+		const current = this.book.readPage ?? 0;
+		const progress = calculateProgressPercent(current, total, unit);
+
+		const progressContainer = infoContainer.createEl('div', {
+			cls: 'reading-tracker-progress-container',
 		});
 
-		// Finished date
-		if (this.book.status === 'finished' && this.book.readFinished) {
-			spineContainer.createEl('div', {
-				cls: 'bookshelf-spine-meta',
-				text: `Finished: ${this.book.readFinished.split(' ')[0]}`,
+		if (total === undefined || progress === null) {
+			const fallbackText = current > 0
+				? `Position: ${formatAmount(current, unit)} · Set total in properties for %`
+				: 'Set total in note properties to track progress';
+			progressContainer.createEl('div', {
+				cls: 'reading-tracker-no-total-hint',
+				text: fallbackText,
+			});
+			return;
+		}
+
+		const remaining = Math.max(0, total - current);
+		const progressHeader = progressContainer.createEl('div', {
+			cls: 'reading-tracker-progress-header',
+		});
+
+		progressHeader.createEl('span', {
+			cls: 'reading-tracker-progress-position',
+			text: `${formatPosition(current, unit)} / ${formatAmount(total, unit)}`,
+		});
+
+		progressHeader.createEl('span', {
+			cls: 'reading-tracker-progress-percent',
+			text: `${Math.round(progress)}%`,
+		});
+
+		const progressBar = progressContainer.createEl('div', {
+			cls: 'reading-tracker-progress-bar',
+		});
+
+		const progressFill = progressBar.createEl('div', {
+			cls: 'reading-tracker-progress-fill',
+		});
+		progressFill.setCssProps({ width: `${progress}%` });
+
+		const progressSub = progressContainer.createEl('div', {
+			cls: 'reading-tracker-progress-sub',
+			text: remaining > 0 ? `${formatAmount(remaining, unit)} left` : 'Completed',
+		});
+		void progressSub;
+	}
+
+	private renderReadingMeta(infoContainer: HTMLElement): void {
+		const metaRow = infoContainer.createEl('div', {
+			cls: 'reading-tracker-card-meta',
+		});
+
+		const startedDate = dayOf(this.book.readStarted);
+		if (this.book.lastReadDate) {
+			metaRow.createEl('span', {
+				cls: 'reading-tracker-meta-item is-accent',
+				text: `Last read ${this.book.lastReadDate}`,
+			});
+		} else if (startedDate) {
+			metaRow.createEl('span', {
+				cls: 'reading-tracker-meta-item',
+				text: `Started ${startedDate}`,
 			});
 		}
 
-		// Click handler
-		if (this.file) {
-			card.addEventListener('click', () => {
-				void this.app.workspace.openLinkText(this.file!.path, '', false);
+		const sessions = this.book.sessionCount ?? 0;
+		if (sessions > 0) {
+			metaRow.createEl('span', {
+				cls: 'reading-tracker-meta-item',
+				text: `${sessions} ${sessions === 1 ? 'sitting' : 'sittings'}`,
 			});
-			card.setCssProps({ cursor: "pointer" });
 		}
 
-		return card;
+		const minutes = this.book.minutesRead ?? 0;
+		if (minutes > 0) {
+			metaRow.createEl('span', {
+				cls: 'reading-tracker-meta-item',
+				text: formatDurationMinutes(minutes),
+			});
+		}
+
+		const quotes = this.book.quoteCount ?? 0;
+		if (quotes > 0) {
+			metaRow.createEl('span', {
+				cls: 'reading-tracker-meta-item',
+				text: `${quotes} ${quotes === 1 ? 'passage' : 'passages'}`,
+			});
+		}
+	}
+
+	private renderActions(infoContainer: HTMLElement): void {
+		if (!this.plugin || !this.file) {
+			return;
+		}
+
+		const plugin = this.plugin;
+		const file = this.file;
+		const buttonContainer = infoContainer.createEl('div', {
+			cls: 'reading-tracker-card-actions',
+		});
+
+		const recordButton = buttonContainer.createEl('button', {
+			cls: 'mod-cta reading-tracker-record-button',
+			text: 'Record reading',
+		});
+
+		recordButton.addEventListener('click', (e) => {
+			e.stopPropagation();
+			new RecordSessionModal(this.app, plugin, file).open();
+		});
+	}
+
+	private attachCardOpenHandler(card: HTMLElement): void {
+		if (!this.file) {
+			return;
+		}
+		const file = this.file;
+		card.addEventListener('click', (e) => {
+			if ((e.target as HTMLElement).closest('button')) {
+				return;
+			}
+			void this.app.workspace.openLinkText(file.path, '', false);
+		});
 	}
 }

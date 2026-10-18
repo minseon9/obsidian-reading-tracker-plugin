@@ -3,12 +3,80 @@
  * Renders bar and line charts for statistics visualization
  */
 
-interface ChartDataPoint {
+import { formatDate } from '../../utils/dateUtils';
+
+export interface ChartDataPoint {
 	label: string;
 	value: number;
 }
 
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const CHART_HEIGHT = 200;
+const VIEW_WIDTH = 600;
+const PADDING = 40;
+const Y_AXIS_STEPS = 5;
+const HEATMAP_WEEKS = 52;
+const DAYS_PER_WEEK = 7;
+
 export class ChartRenderer {
+	/**
+	 * Render a 52-week reading activity heatmap (GitHub / Bookmory style).
+	 */
+	static renderActivityHeatmap(
+		container: HTMLElement,
+		doc: Document,
+		dailyActivity: Record<string, number>
+	): void {
+		const wrapper = doc.createElement('div');
+		wrapper.className = 'reading-tracker-heatmap-wrapper';
+
+		const grid = doc.createElement('div');
+		grid.className = 'reading-tracker-heatmap-grid';
+
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		const dayOfWeek = today.getDay(); // 0 (Sun) .. 6 (Sat)
+		const totalCells = (HEATMAP_WEEKS - 1) * DAYS_PER_WEEK + dayOfWeek + 1;
+		const startDate = new Date(today);
+		startDate.setDate(today.getDate() - (totalCells - 1));
+
+		for (let i = 0; i < totalCells; i++) {
+			const cellDate = new Date(startDate);
+			cellDate.setDate(startDate.getDate() + i);
+			const key = formatDate(cellDate);
+			const count = dailyActivity[key] ?? 0;
+			const level = count === 0 ? 0 : count === 1 ? 1 : count === 2 ? 2 : 3;
+
+			const cell = doc.createElement('div');
+			cell.className = `reading-tracker-heatmap-cell is-level-${level}`;
+			cell.title = count > 0
+				? `${key} — read ${count} ${count === 1 ? 'book' : 'books'}`
+				: `${key} — no reading recorded`;
+			grid.appendChild(cell);
+		}
+
+		wrapper.appendChild(grid);
+
+		const legend = doc.createElement('div');
+		legend.className = 'reading-tracker-heatmap-legend';
+		const less = doc.createElement('span');
+		less.textContent = 'Less';
+		legend.appendChild(less);
+
+		for (let level = 0; level <= 3; level++) {
+			const sample = doc.createElement('span');
+			sample.className = `reading-tracker-heatmap-cell is-level-${level}`;
+			legend.appendChild(sample);
+		}
+
+		const more = doc.createElement('span');
+		more.textContent = 'More';
+		legend.appendChild(more);
+		wrapper.appendChild(legend);
+
+		container.appendChild(wrapper);
+	}
+
 	/**
 	 * Render a bar chart
 	 */
@@ -30,7 +98,6 @@ export class ChartRenderer {
 				"margin-bottom": "12px"
 			});
 
-			// Label and value row
 			const labelRow = doc.createElement('div');
 			labelRow.setCssProps({
 				display: "flex",
@@ -57,7 +124,6 @@ export class ChartRenderer {
 			labelRow.appendChild(label);
 			labelRow.appendChild(value);
 
-			// Bar background
 			const barBg = doc.createElement('div');
 			barBg.setCssProps({
 				width: "100%",
@@ -67,7 +133,6 @@ export class ChartRenderer {
 				overflow: "hidden"
 			});
 
-			// Bar fill
 			const barFill = doc.createElement('div');
 			const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
 			barFill.setCssProps({
@@ -85,7 +150,7 @@ export class ChartRenderer {
 	}
 
 	/**
-	 * Render a line chart
+	 * Render a line chart showing variation over time (newest-first input is reversed to chronological left-to-right).
 	 */
 	static renderLineChart(
 		container: HTMLElement,
@@ -98,82 +163,111 @@ export class ChartRenderer {
 			return;
 		}
 
-		const maxValue = Math.max(...data.map(d => d.value));
-		const chartHeight = 200;
-		const padding = 40;
+		const chronologicalData = [...data].reverse();
+		const maxValue = Math.max(...chronologicalData.map(d => d.value), 1);
+		const plotWidth = VIEW_WIDTH - PADDING * 2;
+		const plotHeight = CHART_HEIGHT - PADDING * 2;
 
-		// SVG container
-		const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+		const svg = doc.createElementNS(SVG_NS, 'svg');
 		svg.setAttribute('width', '100%');
-		svg.setAttribute('height', chartHeight.toString());
-		svg.setCssProps({
-			display: "block"
-		});
-
-		// Use fixed coordinate system; viewBox will scale to fit container width
-		const points: Array<{ x: number; y: number; label: string; value: number }> = [];
-		const viewWidth = 600;
-		const stepX = (viewWidth - padding * 2) / Math.max(data.length - 1, 1);
-
-		data.forEach((item, index) => {
-			const x = padding + index * stepX;
-			const y = maxValue > 0
-				? chartHeight - padding - ((item.value / maxValue) * (chartHeight - padding * 2))
-				: chartHeight - padding;
-			points.push({ x, y, label: item.label, value: item.value });
-		});
-
-		// Scale to fit: fixed viewBox, SVG fills container
-		svg.setAttribute('viewBox', `0 0 ${viewWidth} ${chartHeight}`);
+		svg.setAttribute('height', `${CHART_HEIGHT}px`);
+		svg.setAttribute('viewBox', `0 0 ${VIEW_WIDTH} ${CHART_HEIGHT}`);
 		svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+		(svg as unknown as HTMLElement).setCssProps({ display: "block" });
 
-		// Draw line
-		if (points.length > 1) {
-			const pathData = points.map((p, i) =>
-				i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`
-			).join(' ');
+		ChartRenderer.renderGridAndYAxis(svg, doc, maxValue, plotWidth, plotHeight);
 
-			const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-			path.setAttribute('d', pathData);
+		const coordinates = chronologicalData.map((item, index) => {
+			const x = PADDING + (index / (chronologicalData.length - 1 || 1)) * plotWidth;
+			const y = PADDING + plotHeight - (item.value / maxValue) * plotHeight;
+			return { x, y, item };
+		});
+
+		if (coordinates.length > 1) {
+			const path = doc.createElementNS(SVG_NS, 'path');
+			const pointsAttr = coordinates.map(({ x, y }) => `${x},${y}`).join(' L ');
+			path.setAttribute('d', `M ${pointsAttr}`);
 			path.setAttribute('fill', 'none');
 			path.setAttribute('stroke', 'var(--interactive-accent)');
 			path.setAttribute('stroke-width', '2');
+			path.setAttribute('stroke-linecap', 'round');
+			path.setAttribute('stroke-linejoin', 'round');
 			svg.appendChild(path);
 		}
 
-		// Draw points and labels
-		points.forEach((point) => {
-			// Point circle
-			const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-			circle.setAttribute('cx', point.x.toString());
-			circle.setAttribute('cy', point.y.toString());
-			circle.setAttribute('r', '4');
-			circle.setAttribute('fill', 'var(--interactive-accent)');
-			svg.appendChild(circle);
-
-			// X-axis label
-			const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-			text.setAttribute('x', point.x.toString());
-			text.setAttribute('y', (chartHeight - 10).toString());
-			text.setAttribute('text-anchor', 'middle');
-			text.setAttribute('fill', 'var(--text-muted)');
-			text.setAttribute('font-size', '10');
-			text.textContent = point.label;
-			svg.appendChild(text);
-
-			// Value label
-			const valueText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-			valueText.setAttribute('x', point.x.toString());
-			valueText.setAttribute('y', (point.y - 10).toString());
-			valueText.setAttribute('text-anchor', 'middle');
-			valueText.setAttribute('fill', 'var(--text-normal)');
-			valueText.setAttribute('font-size', '10');
-			valueText.setAttribute('font-weight', '600');
-			valueText.textContent = point.value.toString();
-			svg.appendChild(valueText);
-		});
+		for (const { x, y, item } of coordinates) {
+			ChartRenderer.renderDataPoint(svg, doc, x, y, item);
+		}
 
 		container.appendChild(svg);
+	}
+
+	private static renderGridAndYAxis(
+		svg: SVGSVGElement,
+		doc: Document,
+		maxValue: number,
+		plotWidth: number,
+		plotHeight: number
+	): void {
+		for (let i = 0; i <= Y_AXIS_STEPS; i++) {
+			const value = (maxValue / Y_AXIS_STEPS) * i;
+			const y = PADDING + plotHeight - (i / Y_AXIS_STEPS) * plotHeight;
+
+			const gridLine = doc.createElementNS(SVG_NS, 'line');
+			gridLine.setAttribute('x1', PADDING.toString());
+			gridLine.setAttribute('y1', y.toString());
+			gridLine.setAttribute('x2', (PADDING + plotWidth).toString());
+			gridLine.setAttribute('y2', y.toString());
+			gridLine.setAttribute('stroke', 'var(--background-modifier-border)');
+			gridLine.setAttribute('stroke-width', '1');
+			gridLine.setAttribute('stroke-dasharray', '2,2');
+			svg.appendChild(gridLine);
+
+			const yLabel = doc.createElementNS(SVG_NS, 'text');
+			yLabel.setAttribute('x', (PADDING - 5).toString());
+			yLabel.setAttribute('y', (y + 4).toString());
+			yLabel.setAttribute('text-anchor', 'end');
+			yLabel.setAttribute('font-size', '9');
+			yLabel.setAttribute('fill', 'var(--text-muted)');
+			yLabel.textContent = Math.round(value).toString();
+			svg.appendChild(yLabel);
+		}
+	}
+
+	private static renderDataPoint(
+		svg: SVGSVGElement,
+		doc: Document,
+		x: number,
+		y: number,
+		item: ChartDataPoint
+	): void {
+		const circle = doc.createElementNS(SVG_NS, 'circle');
+		circle.setAttribute('cx', x.toString());
+		circle.setAttribute('cy', y.toString());
+		circle.setAttribute('r', '4');
+		circle.setAttribute('fill', 'var(--interactive-accent)');
+		svg.appendChild(circle);
+
+		if (item.value > 0) {
+			const text = doc.createElementNS(SVG_NS, 'text');
+			text.setAttribute('x', x.toString());
+			text.setAttribute('y', (y - 10).toString());
+			text.setAttribute('text-anchor', 'middle');
+			text.setAttribute('font-size', '11');
+			text.setAttribute('fill', 'var(--text-normal)');
+			text.setAttribute('font-weight', '600');
+			text.textContent = item.value.toString();
+			svg.appendChild(text);
+		}
+
+		const label = doc.createElementNS(SVG_NS, 'text');
+		label.setAttribute('x', x.toString());
+		label.setAttribute('y', (CHART_HEIGHT - 10).toString());
+		label.setAttribute('text-anchor', 'middle');
+		label.setAttribute('font-size', '9');
+		label.setAttribute('fill', 'var(--text-muted)');
+		label.textContent = item.label.length > 8 ? `${item.label.substring(0, 8)}...` : item.label;
+		svg.appendChild(label);
 	}
 
 	/**
@@ -194,21 +288,13 @@ export class ChartRenderer {
 			color: "var(--text-muted)"
 		});
 
-		const icon = doc.createElement('div');
-		icon.textContent = '📊';
-		icon.setCssProps({
-			"font-size": "3em",
-			"margin-bottom": "8px"
-		});
-
 		const text = doc.createElement('div');
 		const axisLabel = xAxisLabel.toLowerCase();
-		text.textContent = axisLabel ? `No ${axisLabel} data available` : 'No data available';
+		text.textContent = axisLabel ? `No ${axisLabel} data yet` : 'No data yet';
 		text.setCssProps({
-			"font-size": "14px"
+			"font-size": "13px"
 		});
 
-		emptyState.appendChild(icon);
 		emptyState.appendChild(text);
 		container.appendChild(emptyState);
 	}

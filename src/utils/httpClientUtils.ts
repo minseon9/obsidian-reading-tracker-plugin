@@ -1,36 +1,14 @@
 import { requestUrl } from 'obsidian';
 
 /**
- * HTTP client for making requests with timeout and error handling
+ * Fetch and parse JSON through Obsidian's own request API, which works the same
+ * on desktop and mobile and is not subject to browser CORS rules.
  */
-export class HttpClient {
-	private timeout: number;
+export async function getJson<T>(url: string): Promise<T> {
+	const response = await requestUrl({ url, method: 'GET', throw: false });
 
-	constructor(timeout: number = 5000) {
-		this.timeout = timeout;
+	if (response.status >= 400) {
+		throw new Error(`Request failed with status ${response.status}`);
 	}
-
-	/**
-	 * Make GET request and parse JSON response using Obsidian's requestUrl
-	 * @param url Request URL
-	 * @returns Parsed JSON data
-	 * @throws Error if request fails or response is not valid JSON
-	 */
-	async get<T>(url: string): Promise<T> {
-		try {
-			const response = await requestUrl({
-				url,
-				method: 'GET',
-				throw: false,
-			});
-
-			if (response.status >= 400) {
-				throw new Error(`Request failed with status ${response.status}`);
-			}
-
-			return response.json as T;
-		} catch {
-			throw new Error(`Request failed. Please try again later.`);
-		}
-	}
+	return response.json as T;
 }

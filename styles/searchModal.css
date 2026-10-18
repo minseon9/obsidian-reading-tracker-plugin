@@ -1,12 +1,27 @@
 /* Search Modal Styles */
 
-.bookshelf-loading {
+.reading-tracker-search-modal {
+	width: 640px;
+	max-width: 90vw;
+}
+
+.reading-tracker-loading {
 	padding: 10px;
 	text-align: center;
 	color: var(--text-muted);
 }
 
-.bookshelf-error {
+.reading-tracker-loading.is-hidden {
+	display: none;
+}
+
+.reading-tracker-loading-more {
+	text-align: center;
+	padding: 16px;
+	color: var(--text-muted);
+}
+
+.reading-tracker-error {
 	padding: 10px;
 	margin: 10px 0;
 	border-radius: 4px;
@@ -14,66 +29,136 @@
 	color: var(--text-error);
 }
 
-.bookshelf-search-results {
-	margin-top: 20px;
-	max-height: 500px;
-	overflow-y: auto;
-}
-
-.bookshelf-result-item {
+.reading-tracker-message {
 	display: flex;
-	padding: 15px;
-	margin-bottom: 10px;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 4px;
-	transition: background-color 0.2s;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 12px;
+	margin: 12px 0;
+	border-radius: 6px;
 }
 
-.bookshelf-result-item:hover {
-	background-color: var(--background-modifier-hover);
+.reading-tracker-message-error {
+	background-color: var(--background-modifier-error);
+	color: var(--text-on-accent);
 }
 
-.bookshelf-result-cover {
-	margin-right: 15px;
+.reading-tracker-message-icon {
+	font-weight: 700;
 	flex-shrink: 0;
 }
 
-.bookshelf-result-cover img {
-	border-radius: 4px;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.reading-tracker-message-text {
+	flex: 1;
+	font-size: 13px;
 }
 
-.bookshelf-result-info {
+.reading-tracker-message-close {
+	flex-shrink: 0;
+	font-size: 12px;
+	cursor: pointer;
+}
+
+.reading-tracker-search-results {
+	margin-top: 14px;
+	max-height: 62vh;
+	overflow-y: auto;
+}
+
+.reading-tracker-result-item {
+	display: flex;
+	gap: 14px;
+	padding: 12px;
+	margin-bottom: 10px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	transition: background-color 0.15s;
+}
+
+.reading-tracker-result-item:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.reading-tracker-result-cover {
+	flex-shrink: 0;
+}
+
+.reading-tracker-result-cover img {
+	width: 68px;
+	height: 102px;
+	object-fit: cover;
+	border-radius: 4px;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.reading-tracker-result-info {
 	flex: 1;
+	min-width: 0;
 	display: flex;
 	flex-direction: column;
-	gap: 5px;
+	gap: 4px;
 }
 
-.bookshelf-result-title {
-	font-size: 16px;
+.reading-tracker-result-title {
+	font-size: 15px;
 	font-weight: 600;
 	color: var(--text-normal);
-	margin-bottom: 5px;
+	line-height: 1.3;
 }
 
-.bookshelf-result-author {
-	font-size: 14px;
+.reading-tracker-result-author {
+	font-size: 13px;
 	color: var(--text-muted);
 }
 
-.bookshelf-result-meta {
+.reading-tracker-result-meta {
 	font-size: 12px;
 	color: var(--text-faint);
 }
 
-.bookshelf-result-info button {
-	margin-top: 10px;
-	align-self: flex-start;
+.reading-tracker-result-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 8px;
 }
 
-.bookshelf-no-results {
+.reading-tracker-no-results {
 	padding: 20px;
 	text-align: center;
 	color: var(--text-muted);
+}
+
+/* Inline form when adding a book by hand */
+.reading-tracker-manual-add {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-top: 12px;
+	padding: 14px;
+	background-color: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+}
+
+.reading-tracker-manual-add-title {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+.reading-tracker-manual-add-hint {
+	font-size: 12px;
+	color: var(--text-muted);
+}
+
+.reading-tracker-manual-form-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px;
+}
+
+.reading-tracker-manual-form-grid input,
+.reading-tracker-manual-form-grid select {
+	width: 100%;
 }

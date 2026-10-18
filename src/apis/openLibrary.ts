@@ -1,21 +1,17 @@
 import {Book} from '../models/book';
+import {BookSearchResult} from '../models/bookSearchResult';
 import {createBookFromData} from '../models/bookFactory';
-import {HttpClient} from '../utils/httpClientUtils';
+import {getJson} from '../utils/httpClientUtils';
 import {OpenLibraryEdition, OpenLibrarySearchDoc, OpenLibrarySearchResponse, OpenLibraryWork,} from './types';
 
 export class OpenLibraryClient {
 	private baseUrl = 'https://openlibrary.org';
-	private httpClient: HttpClient;
 
-	constructor(timeout: number = 5000) {
-		this.httpClient = new HttpClient(timeout);
-	}
-
-	async searchBooks(query: string, limit: number = 20, offset: number = 0): Promise<Book[]> {
+	async searchBooks(query: string, limit: number = 20, offset: number = 0): Promise<BookSearchResult[]> {
 		try {
 			const encodedQuery = encodeURIComponent(query);
 			const url = `${this.baseUrl}/search.json?q=${encodedQuery}&limit=${limit}&offset=${offset}`;
-			const data = await this.httpClient.get<OpenLibrarySearchResponse>(url);
+			const data = await getJson<OpenLibrarySearchResponse>(url);
 			return this.convertSearchDocsToBooks(data.docs);
 		} catch {
 			throw new Error(`Failed to search books. Please try again later.`);
@@ -25,7 +21,7 @@ export class OpenLibraryClient {
 	async getBookByOLID(olid: string): Promise<Book | null> {
 		try {
 			const url = `${this.baseUrl}/books/${olid}.json`;
-			const edition = await this.httpClient.get<OpenLibraryEdition>(url);
+			const edition = await getJson<OpenLibraryEdition>(url);
 			const work = await this.fetchWorkDetails(edition);
 			return this.convertEditionToBook(edition, work);
 		} catch (error) {
@@ -46,7 +42,7 @@ export class OpenLibraryClient {
 
 		try {
 			const workUrl = `${this.baseUrl}${firstWork.key}.json`;
-			return await this.httpClient.get<OpenLibraryWork>(workUrl);
+			return await getJson<OpenLibraryWork>(workUrl);
 		} catch {
 			return null;
 		}
@@ -62,17 +58,15 @@ export class OpenLibraryClient {
 
 	private convertEditionToBook(edition: OpenLibraryEdition, work: OpenLibraryWork | null, isbn?: string): Book {
 		const authors = this.extractAuthors(edition);
-		const isbn10 = edition.isbn_10?.[0] || (isbn && isbn.length === 10 ? isbn : undefined);
-		const isbn13 = edition.isbn_13?.[0] || (isbn && isbn.length === 13 ? isbn : undefined);
-		const coverUrl = this.extractCoverUrl(edition, isbn13, isbn10);
+		const resolvedIsbn = edition.isbn_13?.[0] || edition.isbn_10?.[0] || isbn;
+		const coverUrl = this.extractCoverUrl(edition, resolvedIsbn);
 		const totalPages = edition.number_of_pages ?? work?.number_of_pages;
 
 		return createBookFromData({
 			title: edition.title || work?.title || '',
 			subtitle: edition.subtitle || work?.subtitle,
 			author: authors,
-			isbn10,
-			isbn13,
+			isbn: resolvedIsbn,
 			publisher: edition.publishers?.[0] || work?.publishers?.[0],
 			publishDate: edition.publish_date || work?.publish_date,
 			totalPages,
@@ -88,38 +82,35 @@ export class OpenLibraryClient {
 		return edition.authors.map(a => a.name || '').filter(name => name.length > 0);
 	}
 
-	private extractCoverUrl(edition: OpenLibraryEdition, isbn13?: string, isbn10?: string): string | undefined {
+	private extractCoverUrl(edition: OpenLibraryEdition, isbn?: string): string | undefined {
 		if (edition.covers && edition.covers.length > 0 && edition.covers[0] !== undefined) {
 			return this.getBookCover(edition.covers[0], 'M');
 		}
-		if (isbn13) return this.getBookCover(isbn13, 'M');
-		if (isbn10) return this.getBookCover(isbn10, 'M');
-		return undefined;
+		return isbn ? this.getBookCover(isbn, 'M') : undefined;
 	}
 
-	private convertSearchDocToBook(doc: OpenLibrarySearchDoc): Book {
+	private convertSearchDocToBook(doc: OpenLibrarySearchDoc): BookSearchResult {
 		const authors = doc.author_name || [];
 		const coverUrl = doc.cover_i ? this.getBookCover(doc.cover_i, 'M') : undefined;
 		const publishYear = doc.first_publish_year || doc.publish_year?.[0];
 		const publishDate = publishYear ? publishYear.toString() : doc.publish_date?.[0];
 		const totalPages = doc.number_of_pages_median ?? doc.number_of_pages;
 
-		return createBookFromData({
+		const book = createBookFromData({
 			title: doc.title,
 			subtitle: doc.subtitle,
 			author: authors,
-			isbn10: undefined,
-			isbn13: undefined,
 			publisher: doc.publisher?.[0],
 			publishDate,
 			totalPages,
 			coverUrl,
 			category: doc.subject?.slice(0, 5),
-			coverEditionKey: doc.cover_edition_key,
 		});
+
+		return { ...book, editionKey: doc.cover_edition_key };
 	}
 
-	private convertSearchDocsToBooks(docs: OpenLibrarySearchDoc[]): Book[] {
+	private convertSearchDocsToBooks(docs: OpenLibrarySearchDoc[]): BookSearchResult[] {
 		return docs.map(doc => this.convertSearchDocToBook(doc));
 	}
 

@@ -1,18 +1,24 @@
 import { TFile } from 'obsidian';
-import { Book } from '../../models/book';
+import { Book, formatBookTitleWithSeries } from '../../models/book';
+import { formatAmount, formatPosition, toReadingUnit } from '../../models/readingUnit';
 import { BasesViewBase } from './base';
-import BookshelfPlugin from '../../main';
+import { dayOf, formatDate } from '../../utils/dateUtils';
+import ReadingTrackerPlugin from '../../main';
+
+/** The shelves the library view groups books into — everything except books in progress. */
+type ShelfSection = 'unread' | 'finished' | 'abandoned';
 
 /**
- * Library View - Displays unread and finished books in list format
+ * Library View - Displays unread, finished, and abandoned books in list format
  */
 export class LibraryBasesView extends BasesViewBase {
-	type = "bookshelfLibraryView";
+	type = "reading-tracker-library";
 
 	private unreadBooks: Array<{ book: Book; file: TFile }> = [];
 	private finishedBooks: Array<{ book: Book; file: TFile }> = [];
+	private abandonedBooks: Array<{ book: Book; file: TFile }> = [];
 
-	constructor(controller: unknown, containerEl: HTMLElement, plugin: BookshelfPlugin) {
+	constructor(controller: unknown, containerEl: HTMLElement, plugin: ReadingTrackerPlugin) {
 		super(controller, containerEl, plugin);
 	}
 
@@ -22,27 +28,25 @@ export class LibraryBasesView extends BasesViewBase {
 		try {
 			const dataItems = this.extractDataItems();
 			const allBooks = await this.extractBooksFromBasesData(dataItems);
-			
-			// Filter books
+
 			this.unreadBooks = allBooks.filter(({ book }) => book.status === 'unread');
 			this.finishedBooks = allBooks.filter(({ book }) => book.status === 'finished');
-			
-			// Sort unread by date (newest first)
-			this.unreadBooks.sort((a, b) => {
-				return new Date(b.book.created).getTime() - new Date(a.book.created).getTime();
-			});
+			this.abandonedBooks = allBooks.filter(({ book }) => book.status === 'abandoned');
+
+			// Sort unread by when the note was added (newest first)
+			this.unreadBooks.sort((a, b) => b.file.stat.ctime - a.file.stat.ctime);
 
 			// Sort finished by finished date (newest first)
 			this.finishedBooks.sort((a, b) => {
-				const dateA = a.book.readFinished ? new Date(a.book.readFinished).getTime() : 0;
-				const dateB = b.book.readFinished ? new Date(b.book.readFinished).getTime() : 0;
-				return dateB - dateA;
+				const dateA = a.book.readFinished ?? '';
+				const dateB = b.book.readFinished ?? '';
+				return dateB.localeCompare(dateA);
 			});
 
 			this.rootElement.empty();
 			this.renderContent();
 		} catch (error) {
-			console.error('[Bookshelf][UnreadFinishedView] Render error:', error);
+			console.error('[Reading Tracker][LibraryView] Render error:', error);
 			this.renderError(error as Error);
 		}
 	}
@@ -52,92 +56,41 @@ export class LibraryBasesView extends BasesViewBase {
 
 		const doc = this.rootElement.ownerDocument;
 
-	// Header
-	const header = doc.createElement('div');
-	header.className = 'bookshelf-header';
-	header.setCssProps({
-		padding: "12px",
-		"border-bottom": "1px solid var(--background-modifier-border)"
-	});
+		const sections: Array<{ title: string; books: Array<{ book: Book; file: TFile }>; type: ShelfSection }> = [
+			{ title: 'Unread books', books: this.unreadBooks, type: 'unread' },
+			{ title: 'Finished books', books: this.finishedBooks, type: 'finished' },
+			{ title: 'Abandoned books', books: this.abandonedBooks, type: 'abandoned' },
+		];
 
-	const title = doc.createElement('h2');
-	title.textContent = `Unread & Finished (${this.unreadBooks.length} unread, ${this.finishedBooks.length} finished)`;
-	title.setCssProps({
-		margin: "0",
-		"font-size": "1.2em"
-	});
-	header.appendChild(title);
-
-	this.rootElement.appendChild(header);
-
-	// Content container
-	const contentContainer = doc.createElement('div');
-	contentContainer.setCssProps({
-		flex: "1",
-		"overflow-y": "auto",
-		padding: "12px"
-	});
-
-		// Render Unread section
-		if (this.unreadBooks.length > 0) {
-			this.renderSection(contentContainer, doc, 'Unread Books', this.unreadBooks, 'unread');
-		} else {
-		// Create section container for empty state
-		const unreadSectionContainer = doc.createElement('div');
-		unreadSectionContainer.setCssProps({ "margin-top": "24px" });
-		
-		// Section header
-		const sectionHeader = doc.createElement('div');
-		sectionHeader.setCssProps({
-			"margin-bottom": "12px",
-			"padding-bottom": "8px",
-			"border-bottom": "2px solid var(--background-modifier-border)"
+		const header = doc.createElement('div');
+		header.className = 'reading-tracker-header';
+		header.setCssProps({
+			padding: "12px",
+			"border-bottom": "1px solid var(--background-modifier-border)"
 		});
-		
-		const titleEl = doc.createElement('h3');
-		titleEl.textContent = 'Unread books (0)';
-		titleEl.setCssProps({
+
+		const summary = sections
+			.map(({ title: name, books }) => `${books.length} ${name.split(' ')[0]?.toLowerCase() ?? ''}`)
+			.join(', ');
+		const title = doc.createElement('h2');
+		title.textContent = `Library (${summary})`;
+		title.setCssProps({
 			margin: "0",
-			"font-size": "1.2em",
-			"font-weight": "600"
+			"font-size": "1.2em"
 		});
-		sectionHeader.appendChild(titleEl);
-		unreadSectionContainer.appendChild(sectionHeader);
-			
-			// Empty state inside section
-			this.renderEmptyState(unreadSectionContainer);
-			contentContainer.appendChild(unreadSectionContainer);
-		}
+		header.appendChild(title);
 
-		// Render Finished section
-		if (this.finishedBooks.length > 0) {
-			this.renderSection(contentContainer, doc, 'Finished Books', this.finishedBooks, 'finished');
-		} else {
-		// Create section container for empty state
-		const finishedSectionContainer = doc.createElement('div');
-		finishedSectionContainer.setCssProps({ "margin-top": "24px" });
-		
-		// Section header
-		const sectionHeader = doc.createElement('div');
-		sectionHeader.setCssProps({
-			"margin-bottom": "12px",
-			"padding-bottom": "8px",
-			"border-bottom": "2px solid var(--background-modifier-border)"
+		this.rootElement.appendChild(header);
+
+		const contentContainer = doc.createElement('div');
+		contentContainer.setCssProps({
+			flex: "1",
+			"overflow-y": "auto",
+			padding: "12px"
 		});
-		
-		const titleEl = doc.createElement('h3');
-		titleEl.textContent = 'Finished books (0)';
-		titleEl.setCssProps({
-			margin: "0",
-			"font-size": "1.2em",
-			"font-weight": "600"
-		});
-		sectionHeader.appendChild(titleEl);
-		finishedSectionContainer.appendChild(sectionHeader);
-			
-			// Empty state inside section
-			this.renderEmptyState(finishedSectionContainer);
-			contentContainer.appendChild(finishedSectionContainer);
+
+		for (const section of sections) {
+			this.renderSection(contentContainer, doc, section.title, section.books, section.type);
 		}
 
 		this.rootElement.appendChild(contentContainer);
@@ -148,36 +101,51 @@ export class LibraryBasesView extends BasesViewBase {
 		doc: Document,
 		title: string,
 		books: Array<{ book: Book; file: TFile }>,
-		type: 'unread' | 'finished'
+		type: ShelfSection
 	): void {
-	// Section header
-	const sectionHeader = doc.createElement('div');
-	sectionHeader.setCssProps({
-		"margin-top": "24px",
-		"margin-bottom": "12px",
-		"padding-bottom": "8px",
-		"border-bottom": "2px solid var(--background-modifier-border)"
-	});
-	
-	const titleEl = doc.createElement('h3');
-	titleEl.textContent = `${title} (${books.length})`;
-	titleEl.setCssProps({
-		margin: "0",
-		"font-size": "1.2em",
-		"font-weight": "600"
-	});
-	sectionHeader.appendChild(titleEl);
-	container.appendChild(sectionHeader);
+		const sectionHeader = doc.createElement('div');
+		sectionHeader.setCssProps({
+			"margin-top": "24px",
+			"margin-bottom": "12px",
+			"padding-bottom": "8px",
+			"border-bottom": "2px solid var(--background-modifier-border)"
+		});
 
-	// Books list
-	const list = doc.createElement('ul');
-	list.setCssProps({
-		"list-style": "none",
-		padding: "0",
-		margin: "0"
-	});
+		const titleEl = doc.createElement('h3');
+		titleEl.textContent = `${title} (${books.length})`;
+		titleEl.setCssProps({
+			margin: "0",
+			"font-size": "1.2em",
+			"font-weight": "600"
+		});
+		sectionHeader.appendChild(titleEl);
+		container.appendChild(sectionHeader);
 
-	books.forEach(({ book, file }) => {
+		if (books.length === 0) {
+			this.renderEmptyState(container);
+			return;
+		}
+
+		const list = doc.createElement('ul');
+		list.setCssProps({
+			"list-style": "none",
+			padding: "0",
+			margin: "0"
+		});
+
+		for (const { book, file } of books) {
+			list.appendChild(this.renderBookListItem(doc, book, file, type));
+		}
+
+		container.appendChild(list);
+	}
+
+	private renderBookListItem(
+		doc: Document,
+		book: Book,
+		file: TFile,
+		type: ShelfSection
+	): HTMLLIElement {
 		const listItem = doc.createElement('li');
 		listItem.setCssProps({
 			padding: "12px",
@@ -185,17 +153,12 @@ export class LibraryBasesView extends BasesViewBase {
 			cursor: "pointer"
 		});
 		listItem.addEventListener('click', (e) => {
-			// Only open if not prevented
 			if (e.defaultPrevented) return;
-			const app = this.app || this.plugin.app;
-			if (app) {
-				void app.workspace.openLinkText(file.path, '', true);
-			}
+			void this.appInstance.workspace.openLinkText(file.path, '', true);
 		});
 
-		// Title
 		const titleEl = doc.createElement('div');
-		titleEl.textContent = book.title;
+		titleEl.textContent = formatBookTitleWithSeries(book);
 		titleEl.setCssProps({
 			"font-weight": "600",
 			"font-size": "14px",
@@ -203,7 +166,6 @@ export class LibraryBasesView extends BasesViewBase {
 		});
 		listItem.appendChild(titleEl);
 
-		// Author
 		if (book.author && book.author.length > 0) {
 			const authorEl = doc.createElement('div');
 			authorEl.textContent = book.author.join(', ');
@@ -215,7 +177,16 @@ export class LibraryBasesView extends BasesViewBase {
 			listItem.appendChild(authorEl);
 		}
 
-		// Meta info
+		listItem.appendChild(this.renderBookMeta(doc, book, file, type));
+		return listItem;
+	}
+
+	private renderBookMeta(
+		doc: Document,
+		book: Book,
+		file: TFile,
+		type: ShelfSection
+	): HTMLElement {
 		const metaEl = doc.createElement('div');
 		metaEl.setCssProps({
 			"font-size": "11px",
@@ -223,63 +194,73 @@ export class LibraryBasesView extends BasesViewBase {
 			display: "flex",
 			gap: "12px"
 		});
-			
-			if (type === 'finished' && book.readFinished) {
-				const finishedEl = doc.createElement('span');
-				finishedEl.textContent = `Finished: ${book.readFinished}`;
-				metaEl.appendChild(finishedEl);
-			} else if (type === 'unread' && book.created) {
-				const createdEl = doc.createElement('span');
-				createdEl.textContent = `Added: ${book.created.split(' ')[0]}`;
-				metaEl.appendChild(createdEl);
-			}
-			
-			if (book.totalPages) {
-				const pagesEl = doc.createElement('span');
-				pagesEl.textContent = `${book.totalPages} pages`;
-				metaEl.appendChild(pagesEl);
-			}
 
-			listItem.appendChild(metaEl);
-			list.appendChild(listItem);
-		});
+		const unit = toReadingUnit(book.readingUnit);
+		const finishedDate = dayOf(book.readFinished) ?? book.readFinished;
 
-		container.appendChild(list);
+		if (type === 'finished' && finishedDate) {
+			const finishedEl = doc.createElement('span');
+			finishedEl.textContent = `Finished: ${finishedDate}`;
+			metaEl.appendChild(finishedEl);
+		} else if (type !== 'finished') {
+			const createdEl = doc.createElement('span');
+			createdEl.textContent = `Added: ${formatDate(new Date(file.stat.ctime))}`;
+			metaEl.appendChild(createdEl);
+		}
+
+		if (type === 'abandoned' && book.readPage) {
+			const stoppedEl = doc.createElement('span');
+			stoppedEl.textContent = `Stopped at ${formatPosition(book.readPage, unit)}`;
+			metaEl.appendChild(stoppedEl);
+		}
+
+		if (book.rating !== undefined && book.rating > 0) {
+			const ratingEl = doc.createElement('span');
+			ratingEl.textContent = '★'.repeat(book.rating);
+			metaEl.appendChild(ratingEl);
+		}
+
+		if (book.totalPages) {
+			const pagesEl = doc.createElement('span');
+			pagesEl.textContent = formatAmount(book.totalPages, unit);
+			metaEl.appendChild(pagesEl);
+		}
+
+		return metaEl;
 	}
 
+	private renderEmptyState(container: HTMLElement): void {
+		const doc = container.ownerDocument;
+		const emptyState = doc.createElement('div');
+		emptyState.className = 'reading-tracker-empty-state';
+		emptyState.setCssProps({
+			display: "flex",
+			"flex-direction": "column",
+			"align-items": "center",
+			"justify-content": "center",
+			padding: "40px 20px",
+			"text-align": "center"
+		});
 
-private renderEmptyState(container: HTMLElement): void {
-	const doc = container.ownerDocument;
-	const emptyState = doc.createElement('div');
-	emptyState.className = 'bookshelf-empty-state';
-	emptyState.setCssProps({
-		display: "flex",
-		"flex-direction": "column",
-		"align-items": "center",
-		"justify-content": "center",
-		padding: "40px 20px",
-		"text-align": "center"
-	});
+		const icon = doc.createElement('div');
+		icon.className = 'reading-tracker-empty-icon';
+		icon.textContent = '📚';
+		icon.setCssProps({
+			"font-size": "3em",
+			"margin-bottom": "12px"
+		});
+		emptyState.appendChild(icon);
 
-	const icon = doc.createElement('div');
-	icon.className = 'bookshelf-empty-icon';
-	icon.textContent = '📚';
-	icon.setCssProps({
-		"font-size": "3em",
-		"margin-bottom": "12px"
-	});
-	emptyState.appendChild(icon);
+		const title = doc.createElement('div');
+		title.textContent = 'No books';
+		title.setCssProps({
+			margin: "0",
+			"font-size": "1.1em",
+			color: "var(--text-muted)"
+		});
+		emptyState.appendChild(title);
 
-	const title = doc.createElement('div');
-	title.textContent = 'No books';
-	title.setCssProps({
-		margin: "0",
-		"font-size": "1.1em",
-		color: "var(--text-muted)"
-	});
-	emptyState.appendChild(title);
-
-	container.appendChild(emptyState);
-}
+		container.appendChild(emptyState);
+	}
 }
 

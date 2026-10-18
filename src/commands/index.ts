@@ -1,12 +1,16 @@
 import {App} from 'obsidian';
-import BookshelfPlugin from '../main';
+import ReadingTrackerPlugin from '../main';
 import {registerSearchBookCommand} from './searchBook';
-import {registerUpdateProgressCommand} from './updateProgress';
+import {registerRecordSessionCommand} from './recordSession';
+import {registerResetViewsCommand} from './resetViews';
+import {registerOpenShelfCommand} from './openShelf';
 
 /**
  * Register all commands
  */
-export function registerCommands(app: App, plugin: BookshelfPlugin): void {
+export function registerCommands(app: App, plugin: ReadingTrackerPlugin): void {
 	registerSearchBookCommand(app, plugin);
-	registerUpdateProgressCommand(app, plugin);
+	registerRecordSessionCommand(app, plugin);
+	registerResetViewsCommand(plugin);
+	registerOpenShelfCommand(plugin);
 }

@@ -1,25 +1,23 @@
 import { Book } from './book';
 
 export function createBookFromData(data: Partial<Book>): Book {
-	const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
-
 	return {
-		title: data.title || 'Unknown Title',
+		title: data.title || 'Unknown title',
 		subtitle: data.subtitle,
 		author: data.author || [],
-		isbn10: data.isbn10,
-		isbn13: data.isbn13,
+		isbn: data.isbn,
 		publisher: data.publisher,
 		publishDate: data.publishDate,
 		totalPages: data.totalPages,
 		coverUrl: data.coverUrl,
 		category: data.category || [],
-		coverEditionKey: data.coverEditionKey,
+		series: data.series,
+		seriesPosition: data.seriesPosition,
 		status: data.status || 'unread',
+		readingUnit: data.readingUnit || 'pages',
 		readPage: data.readPage || 0,
+		rating: data.rating,
 		readStarted: data.readStarted,
 		readFinished: data.readFinished,
-		created: data.created || now,
-		updated: data.updated || now,
 	};
 }

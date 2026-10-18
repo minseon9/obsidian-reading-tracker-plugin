@@ -1,8 +1,9 @@
-import type { BookshelfSettings } from "../../../settings/types";
+import type { ReadingTrackerSettings } from "../../../settings/types";
+import { PathManager } from "../../pathService/pathManager";
 
 export class StatisticsBaseFileGenerator {
-	static generate(settings: BookshelfSettings): string {
-		const booksFolder = `${settings.bookFolder}/Books`;
+	static generate(settings: ReadingTrackerSettings): string {
+		const booksFolder = PathManager.getBooksFolderPath(settings.bookFolder);
 		
 		return `filters:
   and:
@@ -10,7 +11,7 @@ export class StatisticsBaseFileGenerator {
     - file.path.endsWith(".md")
 
 views:
-  - type: bookshelfStatisticsView
+  - type: reading-tracker-statistics
     name: Statistics
 `;
 	}

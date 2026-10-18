@@ -1,95 +1,103 @@
 import { Book } from '../../models/book';
-import { getCurrentDateTime } from '../../utils/dateUtils';
+import { toBookStatus } from '../../models/bookStatus';
+import { toReadingUnit } from '../../models/readingUnit';
 import { Frontmatter } from './types';
 
+/** How each field of a book maps onto a note property. */
+const PROPERTY_OF: Record<string, keyof Frontmatter> = {
+	title: 'title',
+	subtitle: 'subtitle',
+	author: 'author',
+	category: 'category',
+	publisher: 'publisher',
+	publishDate: 'publish',
+	totalPages: 'total',
+	isbn: 'isbn',
+	coverUrl: 'cover',
+	series: 'series',
+	seriesPosition: 'series_position',
+	status: 'status',
+	readingUnit: 'reading_unit',
+	readPage: 'read_page',
+	rating: 'rating',
+	readStarted: 'read_started',
+	readFinished: 'read_finished',
+};
+
 export class FrontmatterConverter {
-	static bookToFrontmatter(book: Book): Frontmatter {
-		const now = getCurrentDateTime();
-		const created = book.created || now;
-		
-		const frontmatter: Frontmatter = {
-			title: book.title || '',
-			subtitle: book.subtitle || '',
-			author: book.author || [],
-			category: book.category || [],
-			publisher: book.publisher || '',
-			publish: book.publishDate || '',
-			isbn: '',
-			cover: book.coverUrl || '',
-			total: 0,
+	/**
+	 * Apply the given book fields to a note's properties, in place.
+	 *
+	 * Only fields that are actually present are written, so updating a status
+	 * does not rewrite the title, and properties this plugin knows nothing
+	 * about are never touched.
+	 */
+	static applyToFrontmatter(frontmatter: Frontmatter, book: Partial<Book>): void {
+		for (const [field, property] of Object.entries(PROPERTY_OF)) {
+			const value = book[field as keyof Book];
+			if (value !== undefined) {
+				frontmatter[property] = value;
+			}
+		}
+	}
+
+	/** The properties a freshly imported book note starts with. */
+	static newBookFrontmatter(book: Book): Frontmatter {
+		const frontmatter: Frontmatter = {};
+		FrontmatterConverter.applyToFrontmatter(frontmatter, {
+			...book,
+			readPage: book.readPage ?? 0,
+			readingUnit: toReadingUnit(book.readingUnit),
 			status: book.status || 'unread',
-			read_page: book.readPage || 0,
-			read_started: book.readStarted !== undefined ? book.readStarted : created,
-			read_finished: book.readFinished || null,
-			created: created,
-			updated: book.updated || now,
-		};
-
-		// Set total pages
-		if (book.totalPages !== undefined && book.totalPages !== null && !isNaN(book.totalPages)) {
-			frontmatter.total = book.totalPages;
-		}
-
-		// Set ISBN
-		const isbn = `${book.isbn10 || ''} ${book.isbn13 || ''}`.trim();
-		if (isbn) {
-			frontmatter.isbn = isbn;
-		}
-
+		});
 		return frontmatter;
 	}
 
 	static frontmatterToBook(frontmatter: Frontmatter): Partial<Book> {
-		const { isbn10, isbn13 } = FrontmatterConverter.extractIsbn(frontmatter.isbn);
-		const calculatedReadPage = FrontmatterConverter.calculateReadPage(frontmatter);
-
-		const status = frontmatter.status;
-		const validStatus = status === 'unread' || status === 'reading' || status === 'finished' ? status : 'unread';
-		
 		return {
-			title: frontmatter.title || '',
-			subtitle: frontmatter.subtitle,
-			author: Array.isArray(frontmatter.author) ? frontmatter.author : [],
-			category: Array.isArray(frontmatter.category) ? frontmatter.category : [],
-			publisher: frontmatter.publisher,
-			publishDate: frontmatter.publish,
-			totalPages: typeof frontmatter.total === 'number' ? frontmatter.total : undefined,
-			isbn10,
-			isbn13,
-			coverUrl: frontmatter.cover,
-			status: validStatus,
-			readPage: calculatedReadPage,
-			readStarted: frontmatter.read_started,
-			readFinished: frontmatter.read_finished !== null ? frontmatter.read_finished : undefined,
-			created: frontmatter.created || getCurrentDateTime(),
-			updated: frontmatter.updated || getCurrentDateTime(),
+			title: FrontmatterConverter.toOptionalString(frontmatter.title) ?? '',
+			subtitle: FrontmatterConverter.toOptionalString(frontmatter.subtitle),
+			author: FrontmatterConverter.toStringList(frontmatter.author),
+			category: FrontmatterConverter.toStringList(frontmatter.category),
+			publisher: FrontmatterConverter.toOptionalString(frontmatter.publisher),
+			publishDate: FrontmatterConverter.toOptionalString(frontmatter.publish),
+			totalPages: FrontmatterConverter.toOptionalNumber(frontmatter.total),
+			isbn: FrontmatterConverter.toOptionalString(frontmatter.isbn),
+			coverUrl: FrontmatterConverter.toOptionalString(frontmatter.cover),
+			series: FrontmatterConverter.toOptionalString(frontmatter.series),
+			seriesPosition: FrontmatterConverter.toOptionalNumber(frontmatter.series_position),
+			status: toBookStatus(frontmatter.status),
+			readingUnit: toReadingUnit(frontmatter.reading_unit),
+			readPage: FrontmatterConverter.toOptionalNumber(frontmatter.read_page) ?? 0,
+			rating: FrontmatterConverter.toOptionalNumber(frontmatter.rating),
+			readStarted: FrontmatterConverter.toOptionalString(frontmatter.read_started),
+			readFinished: FrontmatterConverter.toOptionalString(frontmatter.read_finished),
 		};
 	}
 
-	private static extractIsbn(isbnField: string | undefined): { isbn10?: string; isbn13?: string } {
-		let isbn10: string | undefined;
-		let isbn13: string | undefined;
-		if (isbnField) {
-			const isbns = String(isbnField).trim().split(/\s+/);
-			for (const isbn of isbns) {
-				if (isbn.length === 10) isbn10 = isbn;
-				else if (isbn.length === 13) isbn13 = isbn;
-			}
+	private static toOptionalString(value: unknown): string | undefined {
+		if (typeof value === 'string') {
+			const trimmed = value.trim();
+			return trimmed !== '' ? trimmed : undefined;
 		}
-		return { isbn10, isbn13 };
+		if (typeof value === 'number' && !Number.isNaN(value)) {
+			return String(value);
+		}
+		return undefined;
 	}
 
-	private static calculateReadPage(frontmatter: Frontmatter): number {
-		let readPage = typeof frontmatter.read_page === 'number' ? frontmatter.read_page : 0;
-		if (frontmatter.reading_history_summary && Array.isArray(frontmatter.reading_history_summary)) {
-			const totalFromHistory = frontmatter.reading_history_summary.reduce(
-				(sum, record) => sum + (record.pagesRead || 0),
-				0
-			);
-			if (totalFromHistory > readPage) {
-				readPage = totalFromHistory;
-			}
+	private static toOptionalNumber(value: unknown): number | undefined {
+		return typeof value === 'number' && !Number.isNaN(value) ? value : undefined;
+	}
+
+	/**
+	 * Obsidian keeps a single value where a reader wrote one, so `author: Han Kang`
+	 * arrives as a string rather than a list. Both forms are accepted.
+	 */
+	private static toStringList(value: unknown): string[] {
+		if (Array.isArray(value)) {
+			return value.filter((item): item is string => typeof item === 'string' && item.trim() !== '');
 		}
-		return readPage;
+		return typeof value === 'string' && value.trim() !== '' ? [value.trim()] : [];
 	}
 }

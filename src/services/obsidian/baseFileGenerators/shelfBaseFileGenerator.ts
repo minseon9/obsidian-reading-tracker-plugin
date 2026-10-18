@@ -1,8 +1,9 @@
-import type { BookshelfSettings } from "../../../settings/types";
+import type { ReadingTrackerSettings } from "../../../settings/types";
+import { PathManager } from "../../pathService/pathManager";
 
-export class BookshelfBaseFileGenerator {
-	static generate(settings: BookshelfSettings): string {
-		const booksFolder = `${settings.bookFolder}/Books`;
+export class ShelfBaseFileGenerator {
+	static generate(settings: ReadingTrackerSettings): string {
+		const booksFolder = PathManager.getBooksFolderPath(settings.bookFolder);
 		
 		return `filters:
   and:
@@ -33,8 +34,8 @@ columns:
     type: number
 
 views:
-  - type: bookshelfView
-    name: Bookshelf
+  - type: reading-tracker-shelf
+    name: Shelf
 `;
 	}
 }

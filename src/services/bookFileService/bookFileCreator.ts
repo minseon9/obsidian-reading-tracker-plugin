@@ -4,39 +4,55 @@ import { FolderManager } from '../pathService/folderManager';
 import { FileNameGenerator } from '../pathService/fileNameGenerator';
 import { PathManager } from '../pathService/pathManager';
 import { FrontmatterConverter } from '../frontmatterService/frontmatterConverter';
-import { FrontmatterCreator } from '../frontmatterService/frontmatterCreator';
-import { TemplateProcessor } from '../templateService';
+import { NoteAccess } from '../frontmatterService/noteAccess';
 
 export class BookFileCreator {
 	private app: App;
 	private folderManager: FolderManager;
-	private templateProcessor: TemplateProcessor;
 
 	constructor(app: App) {
 		this.app = app;
 		this.folderManager = new FolderManager(app);
-		this.templateProcessor = new TemplateProcessor();
 	}
 
+	/**
+	 * Create a book note.
+	 *
+	 * The body is written first and the properties are then filled in through
+	 * `processFrontMatter`, so Obsidian serialises them exactly the way it does
+	 * for a note the reader edits by hand.
+	 */
 	async create(book: Book, baseFolder: string): Promise<TFile> {
 		const booksFolder = PathManager.getBooksFolderPath(baseFolder);
 		await this.folderManager.ensureFolder(booksFolder);
 
 		const fileName = FileNameGenerator.generate(book.title);
 		const filePath = normalizePath(`${booksFolder}/${fileName}.md`);
-		const existingFile = this.app.vault.getAbstractFileByPath(filePath);
-		
-		if (existingFile instanceof TFile) {
-			throw new Error(`Book note already exists: ${existingFile.path}`);
+
+		if (this.app.vault.getFileByPath(filePath)) {
+			throw new Error(`Book note already exists: ${filePath}`);
 		}
 
-		const frontmatter = FrontmatterConverter.bookToFrontmatter(book);
-		const frontmatterString = FrontmatterCreator.create(frontmatter);
-		const template = this.templateProcessor.getDefaultTemplate();
-		const bodyContent = this.templateProcessor.processTemplate(template, book);
-		const body = bodyContent.trim() || `# ${book.title}\n`;
-		const content = `${frontmatterString}\n${body}`;
+		const file = await this.app.vault.create(filePath, BookFileCreator.body(book));
 
-		return await this.app.vault.create(filePath, content);
+		const properties = FrontmatterConverter.newBookFrontmatter(book);
+		await NoteAccess.updateFrontmatter(this.app, file, (frontmatter) => {
+			Object.assign(frontmatter, properties);
+		});
+
+		return file;
+	}
+
+	/**
+	 * The starting body of a book note: a heading and the cover, if there is one.
+	 * Everything else the reader adds themselves, and sessions are appended
+	 * below as they read.
+	 */
+	private static body(book: Book): string {
+		const lines = [`# ${book.title}`];
+		if (book.coverUrl) {
+			lines.push('', `![cover|150](${book.coverUrl})`);
+		}
+		return `${lines.join('\n')}\n`;
 	}
 }

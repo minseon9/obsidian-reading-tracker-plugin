@@ -1,66 +1,42 @@
 /**
- * Date utility functions with timezone support
+ * Date helpers.
+ *
+ * Everything is in the reader's local time — a session logged at 2am belongs to
+ * that night, which is what the vault's daily notes assume too.
  */
 
-let timezoneOffset = 0;
+const PAD = (value: number): string => String(value).padStart(2, '0');
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
 
-/**
- * Set timezone offset for date formatting
- * @param offset Timezone offset in hours (e.g., 0 for UTC, 9 for KST)
- */
-export function setTimezoneOffset(offset: number): void {
-	timezoneOffset = offset;
+/** Format a date as `YYYY-MM-DD HH:mm:ss` in local time. */
+export function formatDateTime(date: Date = new Date()): string {
+	return `${formatDate(date)} ${PAD(date.getHours())}:${PAD(date.getMinutes())}:${PAD(date.getSeconds())}`;
 }
 
-/**
- * Get current timezone offset
- * @returns Current timezone offset in hours
- */
-export function getTimezoneOffset(): number {
-	return timezoneOffset;
+/** Format a date as `YYYY-MM-DD` in local time. */
+export function formatDate(date: Date = new Date()): string {
+	return `${date.getFullYear()}-${PAD(date.getMonth() + 1)}-${PAD(date.getDate())}`;
 }
 
-/**
- * Format date according to the given format string with timezone adjustment
- * @param date Date object or date string
- * @param format Format string (default: "YYYY-MM-DD HH:mm:ss")
- * @returns Formatted date string
- */
-export function formatDate(date: Date | string, format: string = 'YYYY-MM-DD HH:mm:ss'): string {
-	const d = typeof date === 'string' ? new Date(date) : date;
-	
-	// Apply timezone offset
-	const utcTime = d.getTime() + (d.getTimezoneOffset() * 60000);
-	const adjustedTime = new Date(utcTime + (timezoneOffset * 3600000));
-
-	const year = adjustedTime.getFullYear();
-	const month = String(adjustedTime.getMonth() + 1).padStart(2, '0');
-	const day = String(adjustedTime.getDate()).padStart(2, '0');
-	const hours = String(adjustedTime.getHours()).padStart(2, '0');
-	const minutes = String(adjustedTime.getMinutes()).padStart(2, '0');
-	const seconds = String(adjustedTime.getSeconds()).padStart(2, '0');
-
-	return format
-		.replace(/YYYY/g, String(year))
-		.replace(/MM/g, month)
-		.replace(/DD/g, day)
-		.replace(/HH/g, hours)
-		.replace(/mm/g, minutes)
-		.replace(/ss/g, seconds);
+/** The `YYYY-MM-DD` part of a stored timestamp. */
+export function dayOf(timestamp: string | undefined): string | undefined {
+	return timestamp?.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
 }
 
-/**
- * Get current date/time formatted string (always "YYYY-MM-DD HH:mm:ss")
- * @returns Formatted current date/time string
- */
-export function getCurrentDateTime(): string {
-	return formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss');
+/** Format minutes as `12h 30m` or `45m`, or `-` when zero/negative. */
+export function formatDurationMinutes(minutes: number): string {
+	if (minutes <= 0) {
+		return '-';
+	}
+	const hours = Math.floor(minutes / 60);
+	const remainingMinutes = minutes % 60;
+	return hours > 0 ? `${hours}h ${remainingMinutes}m` : `${remainingMinutes}m`;
 }
 
-/**
- * Get current date formatted string (always "YYYY-MM-DD")
- * @returns Formatted current date string
- */
-export function getCurrentDate(): string {
-	return formatDate(new Date(), 'YYYY-MM-DD');
+/** Format a `YYYY-MM` key as `Oct 2026`. */
+export function formatMonthLabel(monthKey: string): string {
+	const [year = '', monthNum = '1'] = monthKey.split('-');
+	const monthIndex = parseInt(monthNum, 10) - 1;
+	const monthName = MONTH_NAMES[monthIndex] ?? 'Jan';
+	return `${monthName} ${year}`;
 }
